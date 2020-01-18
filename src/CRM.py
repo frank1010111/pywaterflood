@@ -7,6 +7,19 @@ from scipy import optimize
 
 @njit
 def q_primary(production, time, gain_producer, tau_producer):
+    """Calculates primary production contribution using Arps equation with b=0
+
+    Args
+    ----------
+    production (ndarray): Production, size: Number of time steps
+    time (ndarray): Producing times to forecast, size: Number of time steps
+    gain_producer: Arps q_i factor
+    tau_producer: Arps time constant
+
+    Returns
+    ----------
+    q_hat: Calculated production, size: Number of time steps
+    """
     q_hat = np.zeros_like(production)
 
     # Compute primary production component
@@ -18,6 +31,20 @@ def q_primary(production, time, gain_producer, tau_producer):
 
 @njit
 def q_CRM_perpair(injection, time, gains, taus):
+    """Calculates per injector-producer pair production for all injectors on one producer
+    using CRM model
+
+    Args
+    ----------
+    injection (ndarray): Production, size: Number of time steps
+    time (ndarray): Producing times to forecast, size: Number of time steps
+    gains (ndarray): Connectivities between each injector and the producer, size: Number of injectors
+    taus (ndarray): Time constants between each injector and the producer, size: Number of injectors
+
+    Returns
+    ----------
+    q_hat: Calculated production, size: Number of time steps
+    """
     n = len(time)
     q_hat = np.zeros(n)
     conv_injected = np.zeros((n, injection.shape[1]))
@@ -42,11 +69,51 @@ def q_CRM_perpair(injection, time, gains, taus):
 
 @njit
 def q_CRM_perproducer(injection, time, gain, tau):
+    """Calculates per injector-producer pair production for all injectors on one producer
+    using simplified CRMp model that assumes a single tau for each producer
+
+    Args
+    ----------
+    injection (ndarray): Production, size: Number of time steps
+    time (ndarray): Producing times to forecast, size: Number of time steps
+    gains (ndarray): Connectivities between each injector and the producer, size: Number of injectors
+    tau: Time constants all injectors and the producer
+
+    Returns
+    ----------
+    q_hat: Calculated production, size: Number of time steps
+    """
     tau2 = tau * np.ones(injection.shape[1])
     return q_CRM_perpair(injection, time, gain, tau2)
 
 
 class CRM():
+    """A Capacitance Resistance Model history matcher
+
+    CRM uses a physics-inspired mass balance approach to explain production for waterfloods.
+    It treants each injector-producer well pair as a system with mass input, output, and pressure
+    related to the mass balance. Several versions exist. For an exhaustive review, check
+    "A State-of-the-Art Literature Review on Capacitance Resistance Models for Reservoir
+    Characterization and Performance Forecasting" - Holanda et al., 2018.
+
+    Args
+    ----------
+    primay (bool): Whether to model primary production (strongly recommended)
+    tau_selection (str): How many tau values to select
+        - If 'per-pair', fit tau for each producer-injector pair
+        - If 'per-producer', fit tau for each producer (CRMp model)
+    constraints (str): How to constrain the gains
+        - If 'up-to one' (default), let gains vary from 0 (no connection) to 1 (all injection goes to producer)
+        - If 'positive', require each gain to be positive (It is unlikely to go negative in real life)
+        - If 'sum-to-one', require the gains for each injector to sum to one
+            (all production accounted for)
+        - If 'sum-to-one injector' (not implemented), require each injector's gains to sum to one
+            (all injection accounted for)
+
+    Examples
+    ----------
+    forthcoming
+    """
     def __init__(self, primary: bool = True,
                  tau_selection: str = 'per-pair',
                  constraints: str = 'positive'):
@@ -66,6 +133,18 @@ class CRM():
                              f', not {tau_selection}')
 
     def get_initial_guess(self, tau_selection: str = ''):
+        """Creates the initial guesses for the CRM model parameters
+
+        Args
+        ----------
+        tau_selection: one of 'per-pair' or 'per-producer',
+                       sets whether to use CRM (per-pair) or CRMp model
+
+        Returns
+        ----------
+        x0 (ndarray): Initial primary production gain, time constant
+                      and waterflood gains and time constants, as one long 1-d array
+        """
         if tau_selection:
             self.tau_selection = tau_selection
 
@@ -83,6 +162,7 @@ class CRM():
         return x0
 
     def get_bounds(self, constraints: str = ''):
+        "Create bounds for the model from initialized constraints"
         if constraints:
             self.constraints = constraints
 
@@ -119,6 +199,20 @@ class CRM():
         return bounds, constraints
 
     def fit(self, production, injection, time, num_cores=1, **kwargs):
+        """Build a CRM model from the production and injection data (production, injection)
+
+        Args
+        ----------
+        production (ndarray): production rates for each time period, of shape (n_time, n_producers)
+        injection (ndarray): injection rates for each time period, of shape (n_time, n_injectors)
+        time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
+        num_cores (int): number of cores to run fitting procedure on, defaults to 1
+        **kwargs: keyword arguments to pass to scipy.optimize fitting routine
+
+        Returns
+        ----------
+        self: trained model
+        """
         self.production = production
         self.injection = injection
         self.time = time
@@ -181,8 +275,22 @@ class CRM():
         self.tau = np.vstack(tau_perwell)
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
+        return self
 
     def predict(self, injection=None, time=None):
+        """Predict production for a trained model.
+
+        If the injection and time are not provided, this will use the training values
+
+        Args
+        ----------
+        injection (ndarray): The injection rates to input to the system
+        time (ndarray): The timesteps to predict
+
+        Returns
+        ----------
+        q_hat (ndarray): The predicted values, shape (n_time, n_producers)
+        """
         gains, tau, gains_producer, tau_producer = \
             (self.gains, self.tau, self.gains_producer, self.tau_producer)
         production = self.production
@@ -201,12 +309,27 @@ class CRM():
         return q_hat
 
     def residual(self, production=None, injection=None, time=None):
+        """Calculate the production minus the predicted production for a trained model.
+
+        If the production, injection, and time are not provided, this will use the training values
+
+        Args
+        ----------
+        production (ndarray): The production rates observed, shape (n_timesteps, n_producers)
+        injection (ndarray): The injection rates to input to the system, shape (n_timesteps, n_injectors)
+        time (ndarray): The timesteps to predict
+
+        Returns
+        ----------
+        residual (ndarray): The true production data minus the predictions, shape (n_time, n_producers)
+        """
         q_hat = self.predict(injection, time)
         if production is None:
             production = self.production
         return production - q_hat
 
     def to_excel(self, fname):
+        "Write trained model to an Excel file"
         with pd.ExcelWriter(fname) as f:
             pd.DataFrame(self.gains).to_excel(f, sheet_name='Gains')
             pd.DataFrame(self.tau).to_excel(f, sheet_name='Taus')
@@ -217,5 +340,6 @@ class CRM():
              )
 
     def to_pickle(self, fname):
+        "Write trained model to a pickle file"
         with open(fname, 'wb') as f:
             pickle.dump(self, f)
