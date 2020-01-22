@@ -118,9 +118,10 @@ class CRM():
                  tau_selection: str = 'per-pair',
                  constraints: str = 'positive'):
         self.primary = primary
-        assert ((constraints in ('positive', 'up-to one',
-                                 'sum-to-one', 'sum-to-one injector')),
-                "Invalid constraints")
+        assert (constraints in ('positive', 'up-to one',
+                                 'sum-to-one', 
+                                'sum-to-one injector')
+               ), "Invalid constraints"
         self.constraints = constraints
         self.tau_selection = tau_selection
         if tau_selection == 'per-pair':
@@ -233,7 +234,10 @@ class CRM():
             else:
                 gain_producer = 0
                 tau_producer = 1
-            tau[tau < 1e-10] = 1e-10
+            if self.tau_selection == 'per-pair':
+                tau[tau < 1e-10] = 1e-10
+            elif tau < 1e-10:
+                tau = 1e-10
             if tau_producer < 1e-10:
                 tau_producer = 1e-10
             return gains, tau, gain_producer, tau_producer
