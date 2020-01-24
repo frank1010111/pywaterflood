@@ -3,6 +3,7 @@ from numba import jit, njit, prange
 import pandas as pd
 import pickle
 from scipy import optimize
+from joblib import Parallel, delayed
 
 
 @njit
@@ -98,7 +99,7 @@ class CRM():
 
     Args
     ----------
-    primay (bool): Whether to model primary production (strongly recommended)
+    primary (bool): Whether to model primary production (strongly recommended)
     tau_selection (str): How many tau values to select
         - If 'per-pair', fit tau for each producer-injector pair
         - If 'per-producer', fit tau for each producer (CRMp model)
@@ -267,9 +268,7 @@ class CRM():
         if num_cores == 1:
             results = map(fit_well, production_perwell)
         else:
-            raise NotImplementedError(
-                "Multi-core optimization has not yet been implemented," +
-                " please set num_cores=1")
+            results = Parallel(n_jobs=num_cores)(delayed(fit_well)(x) for x in self.production.T)
 
         opts_perwell = [opts(r['x']) for r in results]
         gains_perwell, tau_perwell, gains_producer, tau_producer = \
