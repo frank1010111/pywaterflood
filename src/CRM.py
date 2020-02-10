@@ -118,11 +118,13 @@ class CRM():
     def __init__(self, primary: bool = True,
                  tau_selection: str = 'per-pair',
                  constraints: str = 'positive'):
+        if type(primary) != bool:
+            raise TypeError('primary must be a boolean')
         self.primary = primary
-        assert (constraints in ('positive', 'up-to one',
+        if not constraints in ('positive', 'up-to one',
                                  'sum-to-one', 
-                                'sum-to-one injector')
-               ), "Invalid constraints"
+                                'sum-to-one injector'):
+            raise ValueError("Invalid constraints")
         self.constraints = constraints
         self.tau_selection = tau_selection
         if tau_selection == 'per-pair':
