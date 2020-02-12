@@ -136,7 +136,7 @@ class CRM():
                              '("per-pair","per-producer")' +
                              f', not {tau_selection}')
 
-    def get_initial_guess(self, tau_selection: str = ''):
+    def _get_initial_guess(self, tau_selection: str = ''):
         """Creates the initial guesses for the CRM model parameters
 
         Args
@@ -161,11 +161,14 @@ class CRM():
             tau_guess1 = np.ones(n_inj) * d_t
         else:  # 'per-producer'
             tau_guess1 = np.array([d_t])
-        x0 = np.concatenate([gains_guess1, tau_guess1,
-                             [gains_producer_guess1, tau_producer_guess1]])
+        if self.primary:
+            x0 = np.concatenate([gains_guess1, tau_guess1,
+                                 [gains_producer_guess1, tau_producer_guess1]])
+        else:
+            x0 = np.concatenate([gains_guess1, tau_guess1])
         return x0
 
-    def get_bounds(self, constraints: str = ''):
+    def _get_bounds(self, constraints: str = ''):
         "Create bounds for the model from initialized constraints"
         if constraints:
             self.constraints = constraints
@@ -221,9 +224,13 @@ class CRM():
         self.injection = injection
         self.time = time
         n_inj = injection.shape[1]
+        if production.shape[0] != injection.shape[0]:
+            raise ValueError("production and injection do not have the same number of time steps")
+        if production.shape[0] != time.shape[0]:
+            raise ValueError("production and time do not have the same number of timesteps")
 
-        x0 = self.get_initial_guess()
-        bounds, constraints = self.get_bounds()
+        x0 = self._get_initial_guess()
+        bounds, constraints = self._get_bounds()
 
         def opts(x):
             gains = x[:n_inj]
