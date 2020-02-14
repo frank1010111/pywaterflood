@@ -308,10 +308,14 @@ class CRM():
         production = self.production
         n_producers = production.shape[1]
 
+        if int(injection is None) + int(time is None) == 1:
+            raise TypeError("predict() takes 1 or 3 arguments, 2 given")
         if injection is None:
             injection = self.injection
         if time is None:
             time = self.time
+        if time.shape[0] != injection.shape[0]:
+            raise ValueError("injection and time need same number of steps")
 
         q_hat = np.zeros((len(time), n_producers))
         for i in range(n_producers):
@@ -342,6 +346,9 @@ class CRM():
 
     def to_excel(self, fname):
         "Write trained model to an Excel file"
+        for x in ('gains', 'tau', 'gains_producer', 'tau_producer'):
+            if x not in self.__dict__.keys():
+                raise(ValueError('Model has not been trained'))
         with pd.ExcelWriter(fname) as f:
             pd.DataFrame(self.gains).to_excel(f, sheet_name='Gains')
             pd.DataFrame(self.tau).to_excel(f, sheet_name='Taus')
