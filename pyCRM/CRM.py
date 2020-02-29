@@ -136,7 +136,7 @@ class CRM():
                              '("per-pair","per-producer")' +
                              f', not {tau_selection}')
 
-    def _get_initial_guess(self, tau_selection: str = ''):
+    def _get_initial_guess(self, tau_selection: str = '', random=False):
         """Creates the initial guesses for the CRM model parameters
 
         Args
@@ -154,8 +154,13 @@ class CRM():
 
         n_inj = self.injection.shape[1]
         d_t = self.time[1] - self.time[0]
-        gains_guess1 = np.ones(n_inj) / n_inj
-        gains_producer_guess1 = 1
+        if random:
+            gains_unnormed = np.random.rand(n_inj)
+            gains_producer_guess1 = np.random.rand()
+        else:
+            gains_unnormed = np.ones(n_inj)
+            gains_producer_guess1 = 1
+        gains_guess1 = gains_unnormed / sum(gains_unnormed)
         tau_producer_guess1 = d_t
         if self.tau_selection == 'per-pair':
             tau_guess1 = np.ones(n_inj) * d_t
@@ -205,7 +210,7 @@ class CRM():
             constraints = ()
         return bounds, constraints
 
-    def fit(self, production, injection, time, num_cores=1, **kwargs):
+    def fit(self, production, injection, time, num_cores=1, random=False, **kwargs):
         """Build a CRM model from the production and injection data (production, injection)
 
         Args
@@ -214,6 +219,7 @@ class CRM():
         injection (ndarray): injection rates for each time period, of shape (n_time, n_injectors)
         time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
         num_cores (int): number of cores to run fitting procedure on, defaults to 1
+        random (bool): whether to randomly initialize the gains
         **kwargs: keyword arguments to pass to scipy.optimize fitting routine
 
         Returns
@@ -229,7 +235,7 @@ class CRM():
         if production.shape[0] != time.shape[0]:
             raise ValueError("production and time do not have the same number of timesteps")
 
-        x0 = self._get_initial_guess()
+        x0 = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
 
         def opts(x):
