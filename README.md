@@ -10,6 +10,7 @@ A literature review has been written by Holanda, Gildin, Jensen, Lake and Kabir,
     numba
     pandas
     scipy
+    joblib
 
 # Install
 The source can be downloaded from <https://github.com/frank1010111/pyCRM>
