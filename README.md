@@ -19,7 +19,7 @@ Python source files are in pyCRM.
 
 # A simple example
     import pandas as pd
-    from src.CRM import CRM
+    from pyCRM.CRM import CRM
 
     prod = pd.read_csv('testing/data/production.csv').values
     inj = pd.read_csv('testing/data/injection.csv').values
