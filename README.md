@@ -15,7 +15,7 @@ A literature review has been written by Holanda, Gildin, Jensen, Lake and Kabir,
 # Install
 The source can be downloaded from <https://github.com/frank1010111/pyCRM>
 
-Python source files are in src.
+Python source files are in pyCRM.
 
 # A simple example
     import pandas as pd
