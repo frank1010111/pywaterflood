@@ -21,9 +21,9 @@ Python source files are in src.
     import pandas as pd
     from src.CRM import CRM
 
-    prod = pd.read_csv('data/test_prod.csv').values
-    inj = pd.read_csv('data/test_inj.csv').values
-    time = pd.read_csv('data/test_time.csv').values
+    prod = pd.read_csv('testing/data/production.csv').values
+    inj = pd.read_csv('testing/data/injection.csv').values
+    time = pd.read_csv('testing/data/time.csv').values
     
     crm = CRM(tau_selection='per-pair', constraints='up-to one')
     crm.fit(prod, inj, time)
