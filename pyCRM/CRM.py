@@ -5,87 +5,46 @@ import pickle
 from scipy import optimize
 from joblib import Parallel, delayed
 
-
 @njit
 def q_primary(production, time, gain_producer, tau_producer):
-    """Calculates primary production contribution using Arps equation with b=0
-
-    Args
-    ----------
-    production (ndarray): Production, size: Number of time steps
-    time (ndarray): Producing times to forecast, size: Number of time steps
-    gain_producer: Arps q_i factor
-    tau_producer: Arps time constant
-
-    Returns
-    ----------
-    q_hat: Calculated production, size: Number of time steps
-    """
     q_hat = np.zeros_like(production)
-
+    
     # Compute primary production component
-    for k in range(len(time)):
-        time_decay = np.exp(- time[k] / tau_producer)
-        q_hat[k] += gain_producer * production[0] * time_decay
+    for i in range(production.shape[1]):
+        for k in range(len(time)):
+            time_decay = np.exp(- time[k] / tau_producer[i])
+            q_hat[k, i] += gain_producer[i] * production[0, i] * time_decay
     return q_hat
 
+#@njit
+def q_CRM_perproducer(n_producers, injection, time, gains, tau):
+    tau2 =  tau[:, np.newaxis] * np.ones((n_producers, injection.shape[1]))
+    return q_CRM_perpair(n_producers, injection, time, gains, tau2)
 
-@njit
-def q_CRM_perpair(injection, time, gains, taus):
-    """Calculates per injector-producer pair production for all injectors on one producer
-    using CRM model
-
-    Args
-    ----------
-    injection (ndarray): Production, size: Number of time steps
-    time (ndarray): Producing times to forecast, size: Number of time steps
-    gains (ndarray): Connectivities between each injector and the producer, size: Number of injectors
-    taus (ndarray): Time constants between each injector and the producer, size: Number of injectors
-
-    Returns
-    ----------
-    q_hat: Calculated production, size: Number of time steps
-    """
-    n = len(time)
-    q_hat = np.zeros(n)
-    conv_injected = np.zeros((n, injection.shape[1]))
-
+#@njit
+def q_CRM_perpair(n_producers, injection, time, gains, tau):
+    q_hat = np.zeros((len(time), n_producers))
     # Compute convolved injection rates
-    for j in range(injection.shape[1]):
-        conv_injected[0, j] += ((1 - np.exp((time[0] - time[1]) / taus[j]))
-                                * injection[0, j])
-        for k in range(1, n):
-            for l in range(1, k+1):
-                time_decay = ((1 - np.exp((time[l-1] - time[l]) / taus[j]))
-                              * np.exp((time[l] - time[k]) / taus[j])
-                              )
-                conv_injected[k, j] += time_decay * injection[l, j]
+    conv_injected = np.zeros( (len(time), injection.shape[1], n_producers) )
+    #breakpoint()
+    for i in range(n_producers):
+        for j in range(injection.shape[1]):
+            conv_injected[0, j, i] += (1 - np.exp((time[0] - time[1]) / tau[i, j])) * injection[0, j]
+            
+            for k in range(1, len(time)):
+                for l in range(1,k+1):
+                    time_decay = ((1 - np.exp((time[l - 1] - time[l]) / tau[i, j])) # time between l and l-1
+                                  * np.exp((time[l] - time[k]) / tau[i, j]) # time between l and k
+                                 )
+                    conv_injected[k, j, i] += time_decay * injection[l, j]
 
     # Calculate waterflood rates
-    for k in range(n):
-        for j in range(injection.shape[1]):
-            q_hat[k] += gains[j] * conv_injected[k, j]
+    for i in range(n_producers):
+        for k in range(len(time)):
+            for j in range(injection.shape[1]):
+                q_hat[k, i] += gains[i, j] * conv_injected[k, j, i]
     return q_hat
 
-
-@njit
-def q_CRM_perproducer(injection, time, gain, tau):
-    """Calculates per injector-producer pair production for all injectors on one producer
-    using simplified CRMp model that assumes a single tau for each producer
-
-    Args
-    ----------
-    injection (ndarray): Production, size: Number of time steps
-    time (ndarray): Producing times to forecast, size: Number of time steps
-    gains (ndarray): Connectivities between each injector and the producer, size: Number of injectors
-    tau: Time constants all injectors and the producer
-
-    Returns
-    ----------
-    q_hat: Calculated production, size: Number of time steps
-    """
-    tau2 = tau * np.ones(injection.shape[1])
-    return q_CRM_perpair(injection, time, gain, tau2)
 
 
 class CRM():
@@ -177,37 +136,49 @@ class CRM():
         "Create bounds for the model from initialized constraints"
         if constraints:
             self.constraints = constraints
-
+        # some calculations
         n_inj = self.injection.shape[1]
+        n_prod = self.production.shape[1]
+        n_gains = n_inj * n_prod
         if self.tau_selection == 'per-pair':
-            n = n_inj * 2
+            n_tau = n_gains
         else:
-            n = n_inj + 1
-
+            n_tau = n_inj
         if self.primary:
-            n = n + 2
-
+            n_primary = n_prod * 2
+        else:
+            n_primary = 0
+        n_all = (n_gains + n_tau + n_primary)
+        # setting bounds and constraints
         if self.constraints == 'positive':
-            bounds = ((0, np.inf), ) * n
+            bounds = ((0, np.inf), ) * n_all
             constraints = ()
         elif self.constraints == 'sum-to-one':
-            bounds = ((0, np.inf), ) * n
-
+            bounds = ((0, np.inf), ) * n_all
             def constrain(x):
-                x = x[:n_inj]
-                return np.sum(x) - 1
+                x_gains = (x[:n_gains]
+                           .reshape(n_prod, n_inj))
+                return sum(np.sum(x, axis=1) - 1)
             constraints = ({'type': 'eq', 'fun': constrain})
         elif self.constraints == 'sum-to-one injector':
+            bounds = ((0, np.inf), ) * n_all
+            def constrain(x):
+                x_gains = (x[:n_gains]
+                           .reshape(n_prod, n_inj))
+                return sum(np.sum(x, axis=0) - 1)
+            constraints = ({'type': 'eq', 'fun': constrain})
             raise NotImplementedError('sum-to-one injector is not implemented')
         elif self.constraints == 'up-to one':
-            lb = np.full(n, 0)
-            ub = np.full(n, np.inf)
-            ub[:n_inj] = 1
+            lb = np.full(n_all, 0)
+            ub = np.full(n_all, np.inf)
+            ub[:n_gains] = 1
             bounds = tuple(zip(lb, ub))
             constraints = ()
         else:
-            bounds = ((0, np.inf), ) * n
-            constraints = ()
+            raise ValueError('constraints must be one of'
+                             '("positive", "sum-to-one","sum-to-one injector","up-to-one"),'
+                             f'not {self.constraints}'
+                            )
         return bounds, constraints
 
     def fit(self, production, injection, time, num_cores=1, random=False, **kwargs):
@@ -321,13 +292,11 @@ class CRM():
         if time is None:
             time = self.time
         if time.shape[0] != injection.shape[0]:
-            raise ValueError("injection and time need same number of steps")
+            raise ValueError("injection and time need the same number of steps")
 
-        q_hat = np.zeros((len(time), n_producers))
-        for i in range(n_producers):
-            q_hat[:, i] += q_primary(production[:, i], time, gains_producer[i],
-                                     tau_producer[i])
-            q_hat[:, i] += self.q_CRM(injection, time, gains[i, :], tau[i])
+        q_primary_pred = q_primary(production, time, gains_producer, tau_producer)
+        q_secondary = self.q_CRM(n_producers, injection, time, gains, tau)
+        q_hat = q_primary_pred + q_secondary
         return q_hat
 
     def residual(self, production=None, injection=None, time=None):
