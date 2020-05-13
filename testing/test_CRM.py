@@ -10,7 +10,7 @@ from pyCRM import CRM
 
 primary = (True, False)
 tau_selection = ('per-pair', 'per-producer')
-constraints = ('positive', 'up-to one', 'sum-to-one')
+constraints = ('positive', 'up-to one', 'sum-to-one', 'sum-to-one injector')
 test_args = list(product(primary, tau_selection, constraints))
 data_dir = 'testing/data/'
 
@@ -78,7 +78,7 @@ class TestPredict:
         with pytest.raises(ValueError):
             crm.predict(injection, time[:-1])
 
-@pytest.mark.skip()
+#@pytest.mark.skip()
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
 class TestFit:
     def test_fit_fails(self, reservoir_simulation_data, primary, tau_selection, constraints):
