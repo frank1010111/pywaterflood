@@ -21,8 +21,12 @@ def q_CRM_perproducer(n_producers, injection, time, gains, tau):
     tau2 =  tau[:, np.newaxis] * np.ones((n_producers, injection.shape[1]))
     return q_CRM_perpair(n_producers, injection, time, gains, tau2)
 
-#@njit
+@njit
 def q_CRM_perpair(n_producers, injection, time, gains, tau):
+    #time_diff_matrix = np.zeros( (len(time), len(time) + 1))
+    #for k in range(1, len(time)):
+    #    for l in range(1, k+1):
+    #        time_diff_matrix[k, l] = time[l] - time[k]
     q_hat = np.zeros((len(time), n_producers))
     # Compute convolved injection rates
     conv_injected = np.zeros( (len(time), injection.shape[1], n_producers) )
@@ -44,8 +48,6 @@ def q_CRM_perpair(n_producers, injection, time, gains, tau):
             for j in range(injection.shape[1]):
                 q_hat[k, i] += gains[i, j] * conv_injected[k, j, i]
     return q_hat
-
-
 
 class CRM():
     """A Capacitance Resistance Model history matcher
@@ -112,26 +114,48 @@ class CRM():
             self.tau_selection = tau_selection
 
         n_inj = self.injection.shape[1]
+        n_prod = self.production.shape[1]
         d_t = self.time[1] - self.time[0]
+        n_gains, n_tau, n_primary = self._opt_numbers()
+        
         if random:
-            gains_unnormed = np.random.rand(n_inj)
-            gains_producer_guess1 = np.random.rand()
+            gains_unnormed = np.random.rand((n_prod, n_inj))
+            gains_producer_guess1 = np.random.rand(n_prod)
         else:
-            gains_unnormed = np.ones(n_inj)
-            gains_producer_guess1 = 1
-        gains_guess1 = gains_unnormed / sum(gains_unnormed)
-        tau_producer_guess1 = d_t
+            gains_unnormed = np.ones((n_prod, n_inj))
+            gains_producer_guess1 = np.ones(n_prod)
+        if self.constraints == 'sum-to-one injector':
+            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 1)
+        else:
+            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 0)
+        tau_producer_guess1 = d_t * np.ones(n_prod)
         if self.tau_selection == 'per-pair':
-            tau_guess1 = np.ones(n_inj) * d_t
+            tau_guess1 = d_t * np.ones((n_prod, n_inj))
         else:  # 'per-producer'
-            tau_guess1 = np.array([d_t])
+            tau_guess1 = d_t * np.ones(n_prod)
         if self.primary:
-            x0 = np.concatenate([gains_guess1, tau_guess1,
-                                 [gains_producer_guess1, tau_producer_guess1]])
+            x0 = np.concatenate([gains_guess1.ravel(), tau_guess1.ravel(),
+                                 gains_producer_guess1, tau_producer_guess1
+                                ])
         else:
             x0 = np.concatenate([gains_guess1, tau_guess1])
         return x0
 
+    def _opt_numbers(self):
+        """returns the number of gains, taus, and primary production parameters to fit"""
+        n_inj = self.injection.shape[1]
+        n_prod = self.production.shape[1]
+        n_gains = n_inj * n_prod
+        if self.tau_selection == 'per-pair':
+            n_tau = n_gains
+        else:
+            n_tau = n_prod
+        if self.primary:
+            n_primary = n_prod * 2
+        else:
+            n_primary = 0
+        return n_gains, n_tau, n_primary
+    
     def _get_bounds(self, constraints: str = ''):
         "Create bounds for the model from initialized constraints"
         if constraints:
@@ -139,15 +163,7 @@ class CRM():
         # some calculations
         n_inj = self.injection.shape[1]
         n_prod = self.production.shape[1]
-        n_gains = n_inj * n_prod
-        if self.tau_selection == 'per-pair':
-            n_tau = n_gains
-        else:
-            n_tau = n_inj
-        if self.primary:
-            n_primary = n_prod * 2
-        else:
-            n_primary = 0
+        n_gains, n_tau, n_primary = self._opt_numbers()
         n_all = (n_gains + n_tau + n_primary)
         # setting bounds and constraints
         if self.constraints == 'positive':
@@ -158,14 +174,14 @@ class CRM():
             def constrain(x):
                 x_gains = (x[:n_gains]
                            .reshape(n_prod, n_inj))
-                return sum(np.sum(x, axis=1) - 1)
+                return sum(np.sum(x_gains, axis=1) - 1)
             constraints = ({'type': 'eq', 'fun': constrain})
         elif self.constraints == 'sum-to-one injector':
             bounds = ((0, np.inf), ) * n_all
             def constrain(x):
                 x_gains = (x[:n_gains]
                            .reshape(n_prod, n_inj))
-                return sum(np.sum(x, axis=0) - 1)
+                return np.sum(np.sum(x_gains, axis=0) - 1)
             constraints = ({'type': 'eq', 'fun': constrain})
             raise NotImplementedError('sum-to-one injector is not implemented')
         elif self.constraints == 'up-to one':
@@ -205,63 +221,81 @@ class CRM():
             raise ValueError("production and injection do not have the same number of time steps")
         if production.shape[0] != time.shape[0]:
             raise ValueError("production and time do not have the same number of timesteps")
+        #if not 'max_nfev'  in kwargs:
+        #    kwargs['max_nfev'] = 20_000
 
         x0 = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
 
         def opts(x):
-            gains = x[:n_inj]
-            if self.tau_selection == 'per-pair':
-                tau = x[n_inj:n_inj * 2]
-            else:
-                tau = x[n_inj]
+            n_inj = self.injection.shape[1]
+            n_prod = self.production.shape[1]
+            n_gains, n_tau, n_primary = self._opt_numbers()
+            gains = (x[:n_gains]
+                     .reshape(n_prod, n_inj))
+            tau = x[n_gains: n_gains + n_tau]
+            if len(tau) == n_gains:
+                tau = tau.reshape(n_prod, n_inj)
             if self.primary:
-                gain_producer = x[-2]
-                tau_producer = x[-1]
+                gain_producer = x[n_gains + n_tau: n_gains + n_tau + n_primary // 2]
+                tau_producer = x[n_gains + n_tau + n_primary // 2:]
             else:
-                gain_producer = 0
-                tau_producer = 1
-            if self.tau_selection == 'per-pair':
-                tau[tau < 1e-10] = 1e-10
-            elif tau < 1e-10:
-                tau = 1e-10
-            if tau_producer < 1e-10:
-                tau_producer = 1e-10
+                gain_producer = np.zeros(n_primary // 2)
+                tau_producer = np.ones(n_primary // 2)   
+#             gains = x[:n_inj]
+#             if self.tau_selection == 'per-pair':
+#                 tau = x[n_inj:n_inj * 2]
+#             else:
+#                 tau = x[n_inj]
+#             if self.primary:
+#                 gain_producer = x[-2]
+#                 tau_producer = x[-1]
+#             else:
+#                 gain_producer = 0
+#                 tau_producer = 1
+            
+
+            tau[tau < 1e-10] = 1e-10
+            tau_producer[tau_producer < 1e-10] = 1e-10
             return gains, tau, gain_producer, tau_producer
 
         def calculate_qhat(x, production):
             gains, tau, gain_producer, tau_producer = opts(x)
+            n_prod = production.shape[1]
             if self.primary:
                 q_hat = q_primary(production, time, gain_producer, tau_producer)
             else:
-                q_hat = np.zeros(len(time))
+                q_hat = np.zeros(len(time), n_prod)
 
-            q_hat += self.q_CRM(injection, time, gains, tau)
+            q_hat += self.q_CRM(n_prod, injection, time, gains, tau)
             return q_hat
 
-        def fit_well(production):
+        def fit_wells(production):
             # residual is an L2 norm
             def residual(x, production):
-                return sum((production - calculate_qhat(x, production)) ** 2)
-
+                return np.sum((production - calculate_qhat(x, production)) ** 2, axis=(0, 1))
+           
             result = optimize.minimize(residual, x0, bounds=bounds,
                                        constraints=constraints,
                                        args=(production, ),
+                                       options = {'maxiter':20_000},
                                        **kwargs)
             return result
+        results = fit_wells(production)
 
-        production_perwell = [x for x in self.production.T]
-        if num_cores == 1:
-            results = map(fit_well, production_perwell)
-        else:
-            results = Parallel(n_jobs=num_cores)(delayed(fit_well)(x) for x in self.production.T)
+        #production_perwell = [x for x in self.production.T]
+        #if num_cores == 1:
+        #    results = map(fit_well, production_perwell)
+        #else:
+        #    results = Parallel(n_jobs=num_cores)(delayed(fit_well)(x) for x in self.production.T)
 
-        opts_perwell = [opts(r['x']) for r in results]
-        gains_perwell, tau_perwell, gains_producer, tau_producer = \
-            map(list, zip(*opts_perwell))
-
-        self.gains = np.vstack(gains_perwell)
-        self.tau = np.vstack(tau_perwell)
+        #opts_perwell = [opts(r['x']) for r in results]
+        #gains_perwell, tau_perwell, gains_producer, tau_producer = \
+        #    map(list, zip(*opts_perwell))
+        gains, tau, gains_producer, tau_producer = opts(results['x'])
+        self.results = results
+        self.gains = gains
+        self.tau = tau
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
         return self
