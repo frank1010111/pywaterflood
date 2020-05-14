@@ -11,7 +11,9 @@ from pyCRM import CRM
 primary = (True, False)
 tau_selection = ('per-pair', 'per-producer')
 constraints = ('positive', 'up-to one', 'sum-to-one', 'sum-to-one injector')
+random = (True, False)
 test_args = list(product(primary, tau_selection, constraints))
+#fit_args = list(product(primary, tau_selection, constraints, random))
 data_dir = 'testing/data/'
 
 @pytest.fixture
@@ -96,17 +98,19 @@ class TestFit:
         with pytest.raises(ValueError):
             crm.fit(production, injection, time[:-1],)
 
-    
-    def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints):
+    @pytest.mark.slow
+    @pytest.mark.parametrize("random", random)
+    def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=1)
-   
+        crm.fit(production, injection, time, num_cores=1, random=random, maxiter=1000)
+
+    @pytest.mark.parametrize("random", random)
     @pytest.mark.skip
-    def test_fit_parallel(self, reservoir_simulation_data, primary, tau_selection, constraints):
+    def test_fit_parallel(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=4)
+        crm.fit(production, injection, time, num_cores=4, random=random)
 
 @pytest.mark.parametrize("primary", primary)
 class TestExport:
