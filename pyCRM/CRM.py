@@ -3,7 +3,7 @@ from numba import jit, njit, prange
 import pandas as pd
 import pickle
 from scipy import optimize
-from joblib import Parallel, delayed
+#from joblib import Parallel, delayed
 
 @njit
 def q_primary(production, time, gain_producer, tau_producer):
@@ -119,8 +119,9 @@ class CRM():
         n_gains, n_tau, n_primary = self._opt_numbers()
         
         if random:
-            gains_unnormed = np.random.rand((n_prod, n_inj))
-            gains_producer_guess1 = np.random.rand(n_prod)
+            rng = np.random.default_rng()
+            gains_unnormed = rng.random((n_prod, n_inj))
+            gains_producer_guess1 = rng.random(n_prod)
         else:
             gains_unnormed = np.ones((n_prod, n_inj))
             gains_producer_guess1 = np.ones(n_prod)
@@ -221,9 +222,8 @@ class CRM():
             raise ValueError("production and injection do not have the same number of time steps")
         if production.shape[0] != time.shape[0]:
             raise ValueError("production and time do not have the same number of timesteps")
-        #if not 'max_nfev'  in kwargs:
-        #    kwargs['max_nfev'] = 20_000
-
+        
+        options = {'maxiter': kwargs.pop('maxiter', 20_000)}
         x0 = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
 
@@ -265,7 +265,7 @@ class CRM():
             result = optimize.minimize(residual, x0, bounds=bounds,
                                        constraints=constraints,
                                        args=(production, ),
-                                       options = {'maxiter':20_000},
+                                       options=options,
                                        **kwargs)
             return result
         results = fit_wells(production)
