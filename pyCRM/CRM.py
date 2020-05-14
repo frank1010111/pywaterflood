@@ -69,7 +69,7 @@ class CRM():
         - If 'positive', require each gain to be positive (It is unlikely to go negative in real life)
         - If 'sum-to-one', require the gains for each injector to sum to one
             (all production accounted for)
-        - If 'sum-to-one injector' (not implemented), require each injector's gains to sum to one
+        - If 'sum-to-one injector', require each injector's gains to sum to one
             (all injection accounted for)
 
     Examples
@@ -125,9 +125,9 @@ class CRM():
             gains_unnormed = np.ones((n_prod, n_inj))
             gains_producer_guess1 = np.ones(n_prod)
         if self.constraints == 'sum-to-one injector':
-            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 1)
+            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 1, keepdims=True)
         else:
-            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 0)
+            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 0, keepdims=True)
         tau_producer_guess1 = d_t * np.ones(n_prod)
         if self.tau_selection == 'per-pair':
             tau_guess1 = d_t * np.ones((n_prod, n_inj))
@@ -138,7 +138,7 @@ class CRM():
                                  gains_producer_guess1, tau_producer_guess1
                                 ])
         else:
-            x0 = np.concatenate([gains_guess1, tau_guess1])
+            x0 = np.concatenate([gains_guess1.ravel(), tau_guess1.ravel()])
         return x0
 
     def _opt_numbers(self):
@@ -183,7 +183,7 @@ class CRM():
                            .reshape(n_prod, n_inj))
                 return np.sum(np.sum(x_gains, axis=0) - 1)
             constraints = ({'type': 'eq', 'fun': constrain})
-            raise NotImplementedError('sum-to-one injector is not implemented')
+            #raise NotImplementedError('sum-to-one injector is not implemented')
         elif self.constraints == 'up-to one':
             lb = np.full(n_all, 0)
             ub = np.full(n_all, np.inf)
@@ -242,19 +242,6 @@ class CRM():
             else:
                 gain_producer = np.zeros(n_primary // 2)
                 tau_producer = np.ones(n_primary // 2)   
-#             gains = x[:n_inj]
-#             if self.tau_selection == 'per-pair':
-#                 tau = x[n_inj:n_inj * 2]
-#             else:
-#                 tau = x[n_inj]
-#             if self.primary:
-#                 gain_producer = x[-2]
-#                 tau_producer = x[-1]
-#             else:
-#                 gain_producer = 0
-#                 tau_producer = 1
-            
-
             tau[tau < 1e-10] = 1e-10
             tau_producer[tau_producer < 1e-10] = 1e-10
             return gains, tau, gain_producer, tau_producer
@@ -265,7 +252,7 @@ class CRM():
             if self.primary:
                 q_hat = q_primary(production, time, gain_producer, tau_producer)
             else:
-                q_hat = np.zeros(len(time), n_prod)
+                q_hat = np.zeros((len(time), n_prod))
 
             q_hat += self.q_CRM(n_prod, injection, time, gains, tau)
             return q_hat
@@ -283,15 +270,6 @@ class CRM():
             return result
         results = fit_wells(production)
 
-        #production_perwell = [x for x in self.production.T]
-        #if num_cores == 1:
-        #    results = map(fit_well, production_perwell)
-        #else:
-        #    results = Parallel(n_jobs=num_cores)(delayed(fit_well)(x) for x in self.production.T)
-
-        #opts_perwell = [opts(r['x']) for r in results]
-        #gains_perwell, tau_perwell, gains_producer, tau_producer = \
-        #    map(list, zip(*opts_perwell))
         gains, tau, gains_producer, tau_producer = opts(results['x'])
         self.results = results
         self.gains = gains
