@@ -49,6 +49,13 @@ def q_CRM_perpair(n_producers, injection, time, gains, tau):
                 q_hat[k, i] += gains[i, j] * conv_injected[k, j, i]
     return q_hat
 
+def random_weights(n_i: int, n_j: int, axis: int=0, seed=None):
+    rng = np.random.default_rng(seed)
+    limit = 10 * (n_i if axis == 0 else n_j)
+    vec = rng.integers(0, limit, (n_i, n_j))
+    axis_sum = vec.sum(axis, keepdims=True)
+    return vec / axis_sum
+
 class CRM():
     """A Capacitance Resistance Model history matcher
 
@@ -118,17 +125,16 @@ class CRM():
         d_t = self.time[1] - self.time[0]
         n_gains, n_tau, n_primary = self._opt_numbers()
         
+        axis = 1 if (self.constraints == 'sum-to-one injector') else 0
         if random:
             rng = np.random.default_rng()
-            gains_unnormed = rng.random((n_prod, n_inj))
+            #gains_unnormed = rng.random((n_prod, n_inj))
             gains_producer_guess1 = rng.random(n_prod)
+            gains_guess1 = random_weights(n_prod, n_inj, axis)
         else:
             gains_unnormed = np.ones((n_prod, n_inj))
+            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, axis, keepdims=True)
             gains_producer_guess1 = np.ones(n_prod)
-        if self.constraints == 'sum-to-one injector':
-            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 1, keepdims=True)
-        else:
-            gains_guess1 = gains_unnormed / np.sum(gains_unnormed, 0, keepdims=True)
         tau_producer_guess1 = d_t * np.ones(n_prod)
         if self.tau_selection == 'per-pair':
             tau_guess1 = d_t * np.ones((n_prod, n_inj))
