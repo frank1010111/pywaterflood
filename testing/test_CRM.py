@@ -103,7 +103,7 @@ class TestFit:
     def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=1, random=random, maxiter=1000)
+        crm.fit(production, injection, time, num_cores=1, random=random, maxiter=100)
 
     @pytest.mark.parametrize("random", random)
     @pytest.mark.skip
