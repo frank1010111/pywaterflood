@@ -87,6 +87,12 @@ def q_CRM_perproducer(injection, time, gain, tau):
     tau2 = tau * np.ones(injection.shape[1])
     return q_CRM_perpair(injection, time, gain, tau2)
 
+def random_weights(n_i: int, n_j: int, axis: int=0, seed=None):
+    rng = np.random.default_rng(seed)
+    limit = 10 * (n_i if axis == 0 else n_j)
+    vec = rng.integers(0, limit, (n_i, n_j))
+    axis_sum = vec.sum(axis, keepdims=True)
+    return vec / axis_sum
 
 class CRM():
     """A Capacitance Resistance Model history matcher
