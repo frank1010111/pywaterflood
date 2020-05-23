@@ -1,5 +1,5 @@
 import numpy as np
-from numba import jit, njit, prange
+from numba import jit, njit, prange, cuda
 import pandas as pd
 import pickle
 from scipy import optimize
@@ -20,6 +20,26 @@ def q_primary(production, time, gain_producer, tau_producer):
 def q_CRM_perproducer(n_producers, injection, time, gains, tau):
     tau2 =  tau[:, np.newaxis] * np.ones((n_producers, injection.shape[1]))
     return q_CRM_perpair(n_producers, injection, time, gains, tau2)
+
+@cuda.jit
+def q_CRM_cuda(injection, time, gains, tau, q_hat):
+    #i is producer, j is injector, k is time
+    i, k = cuda.grid(2)
+    if i < q_hat.shape[1] and k < q_hat.shape[0] and k > 0:
+        tmp = 0
+        for j in range(injection.shape[1]):
+            for l in range(1, k+1):
+                tmp += ((1 - math.exp((time[l - 1] - time[l]) / tau[i, j]))
+                        * math.exp((time[l] - time[k]) / tau[i, j])
+                        * injection[l, j]
+                        * gains[i, j]
+                        )
+        q_hat[k, i] = tmp 
+    elif k == 0:
+        tmp = 0
+        for j in range(injection.shape[1]):
+            tmp += (1 - math.exp((time[0] - time[1]) / tau[i, j])) * injection[0, j] * gains[i, j]
+        q_hat[k, i] = tmp
 
 @njit
 def q_CRM_perpair(n_producers, injection, time, gains, tau):
@@ -189,7 +209,7 @@ class CRM():
                 x_gains = (x[:n_gains]
                            .reshape(n_prod, n_inj))
                 return np.sum(np.sum(x_gains, axis=0) - 1)
-            constraints = ({'type': 'eq', 'fun': constrain})
+            constraints = ({'type': 'ineq', 'fun': constrain})
             #raise NotImplementedError('sum-to-one injector is not implemented')
         elif self.constraints == 'up-to one':
             lb = np.full(n_all, 0)
@@ -268,7 +288,8 @@ class CRM():
             def residual(x, production):
                 return np.sum((production - calculate_qhat(x, production)) ** 2, axis=(0, 1))
            
-            result = optimize.minimize(residual, x0, bounds=bounds,
+            #result = optimize.minimize(residual, x0, bounds=bounds,
+            result = optimize.shgo(residual, bounds,
                                        constraints=constraints,
                                        args=(production, ),
                                        options=options,
