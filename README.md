@@ -24,7 +24,7 @@ Python source files are in pyCRM.
 
     prod = pd.read_csv('testing/data/production.csv').values
     inj = pd.read_csv('testing/data/injection.csv').values
-    time = pd.read_csv('testing/data/time.csv').values
+    time = pd.read_csv('testing/data/time.csv').values[:,0]
     
     crm = CRM(tau_selection='per-pair', constraints='up-to one')
     crm.fit(prod, inj, time)
