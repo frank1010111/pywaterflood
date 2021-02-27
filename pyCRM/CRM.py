@@ -242,6 +242,7 @@ class CRM():
             raise ValueError("production and time do not have the same number of timesteps")
 
         x0 = self._get_initial_guess(random=random)
+        rng = np.random.default_rng()
         bounds, constraints = self._get_bounds()
 
         def opts(x):
@@ -279,7 +280,11 @@ class CRM():
             def residual(x, production):
                 return sum((production - calculate_qhat(x, production)) ** 2)
 
-            result = optimize.minimize(residual, x0, bounds=bounds,
+            x0_local = x0.copy()
+            if random: # randomize the initial guess at gains for each producer
+                gains = x0_local[:n_inj]
+                rng.shuffle(gains)
+            result = optimize.minimize(residual, x0_local, bounds=bounds,
                                        constraints=constraints,
                                        args=(production, ),
                                        **kwargs)
