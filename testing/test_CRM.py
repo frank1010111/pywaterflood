@@ -27,14 +27,16 @@ def reservoir_simulation_data():
 def trained_model(reservoir_simulation_data):
     def _trained_model(*args, **kwargs):
         crm = CRM(*args, **kwargs)
-        crm.injection, crm.production, crm.time = reservoir_simulation_data
-        crm.gains = np.genfromtxt(data_dir + 'gains.csv', delimiter=',')
+        injection, production, time = reservoir_simulation_data
+        crm.set_rates(production, injection, time)
+        gains = np.genfromtxt(data_dir + 'gains.csv', delimiter=',')
         if crm.tau_selection == 'per-pair':
-            crm.tau = np.genfromtxt(data_dir + 'taus_per-pair.csv', delimiter=',')
+            tau = np.genfromtxt(data_dir + 'taus_per-pair.csv', delimiter=',')
         else:
-            crm.tau = np.genfromtxt(data_dir + 'taus.csv', delimiter=',')
-        crm.gains_producer = np.genfromtxt(data_dir + 'gain_producer.csv', delimiter=',')
-        crm.tau_producer = np.genfromtxt(data_dir + 'tau_producer.csv', delimiter=',')
+            tau = np.genfromtxt(data_dir + 'taus.csv', delimiter=',')    
+        gains_producer = np.genfromtxt(data_dir + 'gain_producer.csv', delimiter=',')
+        tau_producer = np.genfromtxt(data_dir + 'tau_producer.csv', delimiter=',')
+        crm.set_connections(gains, tau, gains_producer, tau_producer)
         return crm
     return _trained_model
 
@@ -52,9 +54,18 @@ class TestInstantiate:
         with pytest.raises(ValueError):
             CRM(primary=primary, tau_selection = 'per-Bob', constraints=constraints)
 
+
+
 @pytest.mark.parametrize("tau_selection", tau_selection)
 @pytest.mark.parametrize("primary", primary)
 class TestPredict:
+    def test_set_rates(self, reservoir_simulation_data, primary, tau_selection):
+        injection, production, time = reservoir_simulation_data
+        crm = CRM(primary, tau_selection)
+        crm.set_rates(production)
+        crm.set_rates(production, injection)
+        crm.set_rates(production, injection, time)
+        
     def test_predict(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary=primary, tau_selection=tau_selection)
