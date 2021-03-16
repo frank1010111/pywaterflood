@@ -7,7 +7,7 @@ A literature review has been written by Holanda, Gildin, Jensen, Lake and Kabir,
 
 # Dependencies
     numpy
-    numba
+    jax
     pandas
     scipy
     joblib

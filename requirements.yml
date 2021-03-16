@@ -1,0 +1,12 @@
+dependencies:
+    - python=3.8
+    - pip
+    - numpy
+    - scipy
+    - joblib
+    - pandas
+    - openpyxl
+    - pip:
+        - "jax"
+        - "jaxlib"
+ 

@@ -1,72 +1,49 @@
 import numpy as np
-from numba import jit, njit, prange, cuda
+import jax.numpy as jnp
+from jax import grad, jit, vmap
+from jax import random
 import pandas as pd
 import pickle
 from scipy import optimize
 #from joblib import Parallel, delayed
 
-@njit
+@jit
 def q_primary(production, time, gain_producer, tau_producer):
-    q_hat = np.zeros_like(production)
-    
-    # Compute primary production component
-    for i in range(production.shape[1]):
-        for k in range(len(time)):
-            time_decay = np.exp(- time[k] / tau_producer[i])
-            q_hat[k, i] += gain_producer[i] * production[0, i] * time_decay
+    q_hat = (
+        jnp.exp(-jnp.outer(time, 1/tau_producer))
+        * production[0, :]
+        * gain_producer
+    )
     return q_hat
 
-#@njit
-def q_CRM_perproducer(n_producers, injection, time, gains, tau):
-    tau2 =  tau[:, np.newaxis] * np.ones((n_producers, injection.shape[1]))
-    return q_CRM_perpair(n_producers, injection, time, gains, tau2)
+@jit
+def calc_time_decay(time, taus):
+    time2 = jnp.atleast_2d(time)
+    time_diff = jnp.apply_along_axis(lambda x: x - time, axis=0, arr=time2)
+    time_diff = jnp.where(time_diff >= 0, time_diff, jnp.inf)
+    time_diff_scaled = jnp.outer(time_diff, 1/taus).reshape((len(time), len(time), *taus.shape))
+    time_decay = jnp.exp(-time_diff_scaled) 
+    return time_decay
 
-@cuda.jit
-def q_CRM_cuda(injection, time, gains, tau, q_hat):
-    #i is producer, j is injector, k is time
-    i, k = cuda.grid(2)
-    if i < q_hat.shape[1] and k < q_hat.shape[0] and k > 0:
-        tmp = 0
-        for j in range(injection.shape[1]):
-            for l in range(1, k+1):
-                tmp += ((1 - math.exp((time[l - 1] - time[l]) / tau[i, j]))
-                        * math.exp((time[l] - time[k]) / tau[i, j])
-                        * injection[l, j]
-                        * gains[i, j]
-                        )
-        q_hat[k, i] = tmp 
-    elif k == 0:
-        tmp = 0
-        for j in range(injection.shape[1]):
-            tmp += (1 - math.exp((time[0] - time[1]) / tau[i, j])) * injection[0, j] * gains[i, j]
-        q_hat[k, i] = tmp
+@jit
+def calc_nearest_time_decay(time, taus):
+    time_diff = jnp.concatenate([jnp.array([time[1]-time[0]]), time[1:]-time[:-1]])
+    time_diff_scaled = jnp.outer(time_diff, 1/taus).reshape(len(time),*taus.shape)
+    time_decay = jnp.exp(-time_diff_scaled)
+    return time_decay
 
-@njit
-def q_CRM_perpair(n_producers, injection, time, gains, tau):
-    #time_diff_matrix = np.zeros( (len(time), len(time) + 1))
-    #for k in range(1, len(time)):
-    #    for l in range(1, k+1):
-    #        time_diff_matrix[k, l] = time[l] - time[k]
-    q_hat = np.zeros((len(time), n_producers))
-    # Compute convolved injection rates
-    conv_injected = np.zeros( (len(time), injection.shape[1], n_producers) )
-    #breakpoint()
-    for i in range(n_producers):
-        for j in range(injection.shape[1]):
-            conv_injected[0, j, i] += (1 - np.exp((time[0] - time[1]) / tau[i, j])) * injection[0, j]
-            
-            for k in range(1, len(time)):
-                for l in range(1,k+1):
-                    time_decay = ((1 - np.exp((time[l - 1] - time[l]) / tau[i, j])) # time between l and l-1
-                                  * np.exp((time[l] - time[k]) / tau[i, j]) # time between l and k
-                                 )
-                    conv_injected[k, j, i] += time_decay * injection[l, j]
+@jit
+def q_CRM_perproducer(injection, time, gains, tau):
+    tau2 =  jnp.einsum('i,ij->ij',tau, jnp.ones_like(gains))
+    return q_CRM_perpair(injection, time, gains, tau2)
 
-    # Calculate waterflood rates
-    for i in range(n_producers):
-        for k in range(len(time)):
-            for j in range(injection.shape[1]):
-                q_hat[k, i] += gains[i, j] * conv_injected[k, j, i]
+@jit
+def q_CRM_perpair(injection, time, gains, tau):
+    time_decay = calc_time_decay(time, tau)
+    neighbor_time_decay = calc_nearest_time_decay(time,tau)
+    gained_injection = jnp.einsum('kj,ij->ki', injection, gains)
+    total_decay = jnp.einsum('kij,lkij->lkij', (1-neighbor_time_decay), time_decay)
+    q_hat = jnp.einsum('lkij,li->ki', total_decay, gained_injection)
     return q_hat
 
 def random_weights(n_i: int, n_j: int, axis: int=0, seed=None):
@@ -280,7 +257,7 @@ class CRM():
             else:
                 q_hat = np.zeros((len(time), n_prod))
 
-            q_hat += self.q_CRM(n_prod, injection, time, gains, tau)
+            q_hat += self.q_CRM(injection, time, gains, tau)
             return q_hat
 
         def fit_wells(production):
@@ -305,7 +282,7 @@ class CRM():
         self.tau_producer = np.array(tau_producer)
         return self
 
-    def predict(self, injection=None, time=None):
+    def predict(self, injection=None, time=None, connections={}):
         """Predict production for a trained model.
 
         If the injection and time are not provided, this will use the training values
@@ -314,13 +291,16 @@ class CRM():
         ----------
         injection (ndarray): The injection rates to input to the system
         time (ndarray): The timesteps to predict
+        connections (dict): if present, the gains, tau, gains_producer, tau_producer matrices
 
         Returns
         ----------
         q_hat (ndarray): The predicted values, shape (n_time, n_producers)
         """
-        gains, tau, gains_producer, tau_producer = \
-            (self.gains, self.tau, self.gains_producer, self.tau_producer)
+        gains = connections['gains'] if 'gains' in connections else self.gains
+        tau = connections['tau'] if 'tau' in connections else self.tau
+        gains_producer = connections['gains_producer'] if 'gains_producer' in connections else self.gains_producer
+        tau_producer = connections['tau_producer'] if 'tau_producer' in connections else self.tau_producer
         production = self.production
         n_producers = production.shape[1]
 
@@ -334,9 +314,29 @@ class CRM():
             raise ValueError("injection and time need the same number of steps")
 
         q_primary_pred = q_primary(production, time, gains_producer, tau_producer)
-        q_secondary = self.q_CRM(n_producers, injection, time, gains, tau)
+        q_secondary = self.q_CRM(injection, time, gains, tau)
         q_hat = q_primary_pred + q_secondary
         return q_hat
+
+    def set_rates(self, production=None, injection=None, time=None):
+        """Sets production and injection rates and time"""
+        if not production is None:
+            self.production = production
+        if not injection is None:
+            self.injection = injection
+        if not time is None:
+            self.time = time
+    
+    def set_connections(self, gains=None, tau=None, gains_producer=None, tau_producer=None):
+        """Sets waterflood properties"""
+        if not gains is None:
+            self.gains = gains
+        if not tau is None:
+            self.tau = tau
+        if not gains_producer is None:
+            self.gains_producer = gains_producer
+        if not tau_producer is None:
+            self.tau_producer = tau_producer
 
     def residual(self, production=None, injection=None, time=None):
         """Calculate the production minus the predicted production for a trained model.
