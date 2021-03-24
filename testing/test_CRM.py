@@ -91,7 +91,7 @@ class TestPredict:
         with pytest.raises(ValueError):
             crm.predict(injection, time[:-1])
 
-#@pytest.mark.skip()
+
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
 class TestFit:
     def test_fit_fails(self, reservoir_simulation_data, primary, tau_selection, constraints):
@@ -111,17 +111,11 @@ class TestFit:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("random", random)
-    def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
+    def test_fit(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.fit(production, injection, time, num_cores=1, random=random, options={'maxiter':100})
 
-    @pytest.mark.parametrize("random", random)
-    @pytest.mark.skip
-    def test_fit_parallel(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
-        injection, production, time = reservoir_simulation_data
-        crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=4, random=random)
 
 @pytest.mark.parametrize("primary", primary)
 class TestExport:
