@@ -4,16 +4,14 @@ from jax import grad, jit, vmap
 from jax import random
 import pandas as pd
 import pickle
+#from jax.scipy import optimize
 from scipy import optimize
 #from joblib import Parallel, delayed
 
 @jit
 def q_primary(production, time, gain_producer, tau_producer):
-    q_hat = (
-        jnp.exp(-jnp.outer(time, 1/tau_producer))
-        * production[0, :]
-        * gain_producer
-    )
+    decay = jnp.exp( -jnp.einsum('i,j', time, 1 / tau_producer))
+    q_hat = decay * production[0, :] * gain_producer
     return q_hat
 
 @jit
@@ -160,7 +158,7 @@ class CRM():
             n_primary = 0
         return n_gains, n_tau, n_primary
     
-    def _get_bounds(self, constraints: str = ''):
+    def _get_bounds(self, constraints: str=''):
         "Create bounds for the model from initialized constraints"
         if constraints:
             self.constraints = constraints
@@ -183,8 +181,7 @@ class CRM():
         elif self.constraints == 'sum-to-one injector':
             bounds = ((0, np.inf), ) * n_all
             def constrain(x):
-                x_gains = (x[:n_gains]
-                           .reshape(n_prod, n_inj))
+                x_gains = x[:n_gains].reshape(n_prod, n_inj)
                 return np.sum(np.sum(x_gains, axis=0) - 1)
             constraints = ({'type': 'ineq', 'fun': constrain})
             #raise NotImplementedError('sum-to-one injector is not implemented')
@@ -201,7 +198,36 @@ class CRM():
                             )
         return bounds, constraints
 
-    def fit(self, production, injection, time, num_cores=1, random=False, **kwargs):
+    def _split_opts(self, x: np.ndarray):
+        n_inj = self.injection.shape[1]
+        n_prod = self.production.shape[1]
+        n_gains, n_tau, n_primary = self._opt_numbers()
+        gains = x[:n_gains].reshape(n_prod, n_inj)
+        tau = x[n_gains: n_gains + n_tau]
+        if len(tau) == n_gains:
+            tau = tau.reshape(n_prod, n_inj)
+        if self.primary:
+            gain_producer = x[n_gains + n_tau: n_gains + n_tau + n_primary // 2]
+            tau_producer = x[n_gains + n_tau + n_primary // 2:]
+        else:
+            gain_producer = jnp.zeros(n_primary // 2)
+            tau_producer = jnp.ones(n_primary // 2)
+        tau = jnp.where(tau < 1e-10, 1e-10, tau)
+        tau_producer = jnp.where(tau_producer < 1e-10, 1e-10, tau_producer)
+        return gains, tau, gain_producer, tau_producer
+
+    def _calculate_qhat(self, x, production, injection, time):
+        gains, tau, gain_producer, tau_producer = self._split_opts(x)
+        n_prod = production.shape[1]
+        if self.primary:
+            q_hat = q_primary(production, time, gain_producer, tau_producer)
+        else:
+            q_hat = jnp.zeros((len(time), n_prod))
+
+        q_hat += self.q_CRM(injection, time, gains, tau)
+        return q_hat
+
+    def fit(self, production, injection, time, num_cores=1, random=False, global_fit=False, **kwargs):
         """Build a CRM model from the production and injection data (production, injection)
 
         Args
@@ -211,7 +237,9 @@ class CRM():
         time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
         num_cores (int): number of cores to run fitting procedure on, defaults to 1
         random (bool): whether to randomly initialize the gains
+        global (bool): whether to use a global optimizer
         **kwargs: keyword arguments to pass to scipy.optimize fitting routine
+            default method is `trust-constr`
 
         Returns
         ----------
@@ -225,61 +253,43 @@ class CRM():
             raise ValueError("production and injection do not have the same number of time steps")
         if production.shape[0] != time.shape[0]:
             raise ValueError("production and time do not have the same number of timesteps")
-        
-        options = {'maxiter': kwargs.pop('maxiter', 20_000)}
         x0 = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
+        if 'method' not in kwargs:
+            kwargs['method'] = 'trust-constr'
 
-        def opts(x):
-            n_inj = self.injection.shape[1]
-            n_prod = self.production.shape[1]
-            n_gains, n_tau, n_primary = self._opt_numbers()
-            gains = (x[:n_gains]
-                     .reshape(n_prod, n_inj))
-            tau = x[n_gains: n_gains + n_tau]
-            if len(tau) == n_gains:
-                tau = tau.reshape(n_prod, n_inj)
-            if self.primary:
-                gain_producer = x[n_gains + n_tau: n_gains + n_tau + n_primary // 2]
-                tau_producer = x[n_gains + n_tau + n_primary // 2:]
-            else:
-                gain_producer = np.zeros(n_primary // 2)
-                tau_producer = np.ones(n_primary // 2)   
-            tau[tau < 1e-10] = 1e-10
-            tau_producer[tau_producer < 1e-10] = 1e-10
-            return gains, tau, gain_producer, tau_producer
 
-        def calculate_qhat(x, production):
-            gains, tau, gain_producer, tau_producer = opts(x)
-            n_prod = production.shape[1]
-            if self.primary:
-                q_hat = q_primary(production, time, gain_producer, tau_producer)
-            else:
-                q_hat = np.zeros((len(time), n_prod))
-
-            q_hat += self.q_CRM(injection, time, gains, tau)
-            return q_hat
-
-        def fit_wells(production):
+        def fit_wells(production, injection, time):
+            production = jnp.array(production)
+            injection = jnp.array(injection)
+            time = jnp.array(time)
             # residual is an L2 norm
-            def residual(x, production):
-                return np.sum((production - calculate_qhat(x, production)) ** 2, axis=(0, 1))
-           
-            #result = optimize.minimize(residual, x0, bounds=bounds,
-            result = optimize.shgo(residual, bounds,
-                                       constraints=constraints,
-                                       args=(production, ),
-                                       options=options,
-                                       **kwargs)
-            return result
-        results = fit_wells(production)
+            def residual(x, production, injection, time):
+                err = production - self._calculate_qhat(x, production, injection, time)
+                return jnp.sum(err ** 2, axis=(0, 1))
 
-        gains, tau, gains_producer, tau_producer = opts(results['x'])
+            if global_fit:
+                result = optimize.shgo(
+                    residual,
+                    bounds=bounds,
+                    constraints=constraints,
+                    args=(production, injection, time),
+                    **kwargs
+                )
+            else:
+                result = optimize.minimize(
+                    residual, x0,
+                    bounds=bounds,
+                    constraints=constraints,
+                    args=(production, injection, time),
+                    **kwargs
+                )
+            return result
+        results = fit_wells(production, injection, time)
+
+        gains, tau, gains_producer, tau_producer = self._split_opts(results.x)
         self.results = results
-        self.gains = gains
-        self.tau = tau
-        self.gains_producer = np.array(gains_producer)
-        self.tau_producer = np.array(tau_producer)
+        self.set_connections(gains, tau, np.array(gains_producer), np.array(tau_producer))
         return self
 
     def predict(self, injection=None, time=None, connections={}):
@@ -338,7 +348,7 @@ class CRM():
         if not tau_producer is None:
             self.tau_producer = tau_producer
 
-    def residual(self, production=None, injection=None, time=None):
+    def residual(self, production=None, injection=None, time=None, connections={}):
         """Calculate the production minus the predicted production for a trained model.
 
         If the production, injection, and time are not provided, this will use the training values
@@ -348,12 +358,13 @@ class CRM():
         production (ndarray): The production rates observed, shape (n_timesteps, n_producers)
         injection (ndarray): The injection rates to input to the system, shape (n_timesteps, n_injectors)
         time (ndarray): The timesteps to predict
+        connections (dict): gains, tau, gains_producer, tau_producer arguments
 
         Returns
         ----------
         residual (ndarray): The true production data minus the predictions, shape (n_time, n_producers)
         """
-        q_hat = self.predict(injection, time)
+        q_hat = self.predict(injection, time, connections=connections)
         if production is None:
             production = self.production
         return production - q_hat
