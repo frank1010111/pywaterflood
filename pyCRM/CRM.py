@@ -227,7 +227,7 @@ class CRM():
         q_hat += self.q_CRM(injection, time, gains, tau)
         return q_hat
 
-    def fit(self, production, injection, time, num_cores=1, random=False, global_fit=False, **kwargs):
+    def fit(self, production, injection, time, random=False, global_fit=False, **kwargs):
         """Build a CRM model from the production and injection data (production, injection)
 
         Args
@@ -235,7 +235,6 @@ class CRM():
         production (ndarray): production rates for each time period, of shape (n_time, n_producers)
         injection (ndarray): injection rates for each time period, of shape (n_time, n_injectors)
         time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
-        num_cores (int): number of cores to run fitting procedure on, defaults to 1
         random (bool): whether to randomly initialize the gains
         global (bool): whether to use a global optimizer
         **kwargs: keyword arguments to pass to scipy.optimize fitting routine
