@@ -1,12 +1,16 @@
+channels:
+    - defaults
+    - conda-forge
 dependencies:
     - python=3.8
     - pip
     - numpy
     - scipy
-    - joblib
     - pandas
     - openpyxl
-    - pip:
-        - "jax"
-        - "jaxlib"
+    - pytest
+    #- pip:
+    #    - "jax"
+    #    - "jaxlib[cpu]"
+    #    - "jaxlib==0.1.64+cuda112"
  

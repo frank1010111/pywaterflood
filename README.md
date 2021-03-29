@@ -10,7 +10,6 @@ A literature review has been written by Holanda, Gildin, Jensen, Lake and Kabir,
     jax
     pandas
     scipy
-    joblib
     openpyxl
 
 # Install
