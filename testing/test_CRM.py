@@ -33,7 +33,7 @@ def trained_model(reservoir_simulation_data):
         if crm.tau_selection == 'per-pair':
             tau = np.genfromtxt(data_dir + 'taus_per-pair.csv', delimiter=',')
         else:
-            tau = np.genfromtxt(data_dir + 'taus.csv', delimiter=',')    
+            tau = np.genfromtxt(data_dir + 'taus.csv', delimiter=',')
         gains_producer = np.genfromtxt(data_dir + 'gain_producer.csv', delimiter=',')
         tau_producer = np.genfromtxt(data_dir + 'tau_producer.csv', delimiter=',')
         crm.set_connections(gains, tau, gains_producer, tau_producer)
@@ -45,7 +45,7 @@ class TestInstantiate:
     def test_init(self, primary, tau_selection, constraints):
         CRM(primary, tau_selection, constraints)
 
-    
+
     def test_init_fails(self, primary, tau_selection, constraints):
         with pytest.raises(TypeError):
             CRM(primary='yes', tau_selection=tau_selection, constraints=constraints)
@@ -65,15 +65,15 @@ class TestPredict:
         crm.set_rates(production)
         crm.set_rates(production, injection)
         crm.set_rates(production, injection, time)
-        
+
     def test_predict(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary=primary, tau_selection=tau_selection)
-        
+
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
         prediction1 == pytest.approx(prediction2)
-        
+
         if primary:
             prediction1 == pytest.approx(
                 np.genfromtxt(data_dir + 'prediction.csv', delimiter=',')
@@ -97,7 +97,7 @@ class TestFit:
     def test_fit_fails(self, reservoir_simulation_data, primary, tau_selection, constraints):
         crm = CRM(primary, tau_selection, constraints)
         injection, production, time = reservoir_simulation_data
-        
+
         with pytest.raises(TypeError):
             crm.fit(production)
         with pytest.raises(TypeError):
@@ -114,7 +114,7 @@ class TestFit:
     def test_fit(self, reservoir_simulation_data, primary, tau_selection, constraints, random):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=1, random=random, options={'maxiter':100})
+        crm.fit(production, injection, time, random=random, options={'maxiter':100})
 
 
 @pytest.mark.parametrize("primary", primary)
@@ -122,7 +122,7 @@ class TestExport:
     def test_to_excel(self, trained_model, primary, tmpdir):
         crm = trained_model(primary)
         crm.to_excel(tmpdir + '/test.xlsx')
-    
+
     def test_to_excel_fails(self, trained_model, primary, tmpdir):
         crm = trained_model(primary)
         with pytest.raises(TypeError):
@@ -130,7 +130,7 @@ class TestExport:
         crm2 = CRM(primary)
         with pytest.raises(ValueError):
             crm2.to_excel(tmpdir + '/test.xlsx')
-        
+
     def test_to_pickle(self, trained_model, primary, tmpdir):
         crm = trained_model(primary)
         crm.to_pickle(tmpdir + '/test.pkl')
@@ -138,5 +138,4 @@ class TestExport:
     def test_to_pickle_fails(self, trained_model, primary):
         crm = trained_model(primary)
         with pytest.raises(TypeError):
-            crm.to_pickle()    
-        
+            crm.to_pickle()

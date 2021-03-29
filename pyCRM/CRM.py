@@ -167,29 +167,49 @@ class CRM():
         n_prod = self.production.shape[1]
         n_gains, n_tau, n_primary = self._opt_numbers()
         n_all = (n_gains + n_tau + n_primary)
+
         # setting bounds and constraints
+        tau_max = (self.time[-1] - self.time[0]) * 3
+        tau_min = (self.time[1] - self.time[0]) / 10
+        tau_bounds = [(tau_min, tau_max)]
         if self.constraints == 'positive':
-            bounds = ((0, np.inf), ) * n_all
+            bounds = (
+                [(0, np.inf)] * n_gains 
+                + tau_bounds * n_tau
+                + [(0, np.inf)] * n_primary
+            )
             constraints = ()
         elif self.constraints == 'sum-to-one':
-            bounds = ((0, np.inf), ) * n_all
+            bounds = (
+                [(0, 1)] * n_gains 
+                + tau_bounds * n_tau
+                + [(0, 1)] * (n_primary // 2)
+                + tau_bounds * (n_primary // 2)
+            )
             def constrain(x):
                 x_gains = (x[:n_gains]
                            .reshape(n_prod, n_inj))
                 return sum(np.sum(x_gains, axis=1) - 1)
             constraints = ({'type': 'eq', 'fun': constrain})
         elif self.constraints == 'sum-to-one injector':
-            bounds = ((0, np.inf), ) * n_all
+            bounds = (
+                [(0, 1)] * n_gains 
+                + tau_bounds * n_tau
+                + [(0, 1)] * (n_primary // 2)
+                + tau_bounds * (n_primary // 2)
+            )
             def constrain(x):
                 x_gains = x[:n_gains].reshape(n_prod, n_inj)
                 return np.sum(np.sum(x_gains, axis=0) - 1)
             constraints = ({'type': 'ineq', 'fun': constrain})
             #raise NotImplementedError('sum-to-one injector is not implemented')
         elif self.constraints == 'up-to one':
-            lb = np.full(n_all, 0)
-            ub = np.full(n_all, np.inf)
-            ub[:n_gains] = 1
-            bounds = tuple(zip(lb, ub))
+            bounds = (
+                [(0, 1)] * n_gains 
+                + tau_bounds * n_tau
+                + [(0, 1)] * (n_primary // 2)
+                + tau_bounds * (n_primary // 2)
+            )
             constraints = ()
         else:
             raise ValueError('constraints must be one of'
@@ -254,7 +274,7 @@ class CRM():
             raise ValueError("production and time do not have the same number of timesteps")
         x0 = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
-        if 'method' not in kwargs:
+        if 'method' not in kwargs and not global_fit:
             kwargs['method'] = 'trust-constr'
 
 
