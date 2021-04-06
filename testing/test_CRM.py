@@ -116,6 +116,13 @@ class TestFit:
         crm = CRM(primary, tau_selection, constraints)
         crm.fit(production, injection, time, random=random, options={'maxiter':100})
 
+    @pytest.mark.slow
+    def test_fit_initial_guess(self, reservoir_simulation_data, primary, tau_selection, constraints):
+        injection, production, time = reservoir_simulation_data
+        crm = CRM(primary, tau_selection, constraints)
+        crm.set_rates(production, injection, time)
+        x0 = crm._get_initial_guess(tau_selection)
+        crm.fit(production, injection, time, random=random, initial_guess=x0, options={'maxiter':100})
 
 @pytest.mark.parametrize("primary", primary)
 class TestExport:

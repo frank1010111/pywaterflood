@@ -247,7 +247,7 @@ class CRM():
         q_hat += self.q_CRM(injection, time, gains, tau)
         return q_hat
 
-    def fit(self, production, injection, time, random=False, global_fit=False, **kwargs):
+    def fit(self, production, injection, time, initial_guess=None, random=False, global_fit=False, **kwargs):
         """Build a CRM model from the production and injection data (production, injection)
 
         Args
@@ -255,6 +255,7 @@ class CRM():
         production (ndarray): production rates for each time period, of shape (n_time, n_producers)
         injection (ndarray): injection rates for each time period, of shape (n_time, n_injectors)
         time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
+        initial_guess (ndarray): initial guesses for gains, taus, primary production contribution, as one-dimensional ndarray
         random (bool): whether to randomly initialize the gains
         global (bool): whether to use a global optimizer
         **kwargs: keyword arguments to pass to scipy.optimize fitting routine
@@ -272,7 +273,8 @@ class CRM():
             raise ValueError("production and injection do not have the same number of time steps")
         if production.shape[0] != time.shape[0]:
             raise ValueError("production and time do not have the same number of timesteps")
-        x0 = self._get_initial_guess(random=random)
+        if initial_guess is not None:
+            initial_guess = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
         if 'method' not in kwargs and not global_fit:
             kwargs['method'] = 'trust-constr'
@@ -297,7 +299,7 @@ class CRM():
                 )
             else:
                 result = optimize.minimize(
-                    residual, x0,
+                    residual, initial_guess,
                     bounds=bounds,
                     constraints=constraints,
                     args=(production, injection, time),
