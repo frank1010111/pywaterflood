@@ -273,7 +273,7 @@ class CRM():
             raise ValueError("production and injection do not have the same number of time steps")
         if production.shape[0] != time.shape[0]:
             raise ValueError("production and time do not have the same number of timesteps")
-        if initial_guess is not None:
+        if initial_guess is None:
             initial_guess = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
         if 'method' not in kwargs and not global_fit:
