@@ -27,7 +27,7 @@ def calc_time_decay(time, taus):
 def calc_nearest_time_decay(time, taus):
     time_diff = jnp.concatenate([jnp.array([time[1]-time[0]]), time[1:]-time[:-1]])
     time_diff_scaled = jnp.outer(time_diff, 1/taus).reshape(len(time),*taus.shape)
-    time_decay = jnp.exp(-time_diff_scaled)
+    time_decay = jnp.exp(-time_diff_scaled) #/ taus.shape[1]
     return time_decay
 
 @jit
@@ -40,7 +40,7 @@ def q_CRM_perpair(injection, time, gains, tau):
     time_decay = calc_time_decay(time, tau)
     neighbor_time_decay = calc_nearest_time_decay(time,tau)
     gained_injection = jnp.einsum('kj,ij->ki', injection, gains)
-    total_decay = jnp.einsum('kij,lkij->lkij', (1-neighbor_time_decay), time_decay)
+    total_decay = jnp.einsum('kij,lkij->lkij', (1-neighbor_time_decay), time_decay) / injection.shape[1]
     q_hat = jnp.einsum('lkij,li->ki', total_decay, gained_injection)
     return q_hat
 
@@ -123,7 +123,6 @@ class CRM():
         axis = 1 if (self.constraints == 'sum-to-one injector') else 0
         if random:
             rng = np.random.default_rng()
-            #gains_unnormed = rng.random((n_prod, n_inj))
             gains_producer_guess1 = rng.random(n_prod)
             gains_guess1 = random_weights(n_prod, n_inj, axis)
         else:
@@ -169,8 +168,8 @@ class CRM():
         n_all = (n_gains + n_tau + n_primary)
 
         # setting bounds and constraints
-        tau_max = (self.time[-1] - self.time[0]) * 3
-        tau_min = (self.time[1] - self.time[0]) / 10
+        tau_max = (self.time[-1] - self.time[0]) * 5
+        tau_min = (self.time[1] - self.time[0]) / 3
         tau_bounds = [(tau_min, tau_max)]
         if self.constraints == 'positive':
             bounds = (
@@ -189,7 +188,7 @@ class CRM():
             def constrain(x):
                 x_gains = (x[:n_gains]
                            .reshape(n_prod, n_inj))
-                return sum(np.sum(x_gains, axis=1) - 1)
+                return np.max(np.sum(x_gains, axis=1) - 1)
             constraints = ({'type': 'eq', 'fun': constrain})
         elif self.constraints == 'sum-to-one injector':
             bounds = (
@@ -200,7 +199,7 @@ class CRM():
             )
             def constrain(x):
                 x_gains = x[:n_gains].reshape(n_prod, n_inj)
-                return np.sum(np.sum(x_gains, axis=0) - 1)
+                return np.max(np.sum(x_gains, axis=0) - 1)
             constraints = ({'type': 'ineq', 'fun': constrain})
             #raise NotImplementedError('sum-to-one injector is not implemented')
         elif self.constraints == 'up-to one':
