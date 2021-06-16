@@ -48,8 +48,8 @@ def q_CRM_perpair(injection, time, gains, tau):
     # i=injector, p=producer, k=production time, l=injection time
     time_decay = calc_time_decay(time, tau)
     neighbor_time_decay = calc_nearest_time_decay(time, tau)
-    gained_injection = jnp.einsum("li,ip->lip", injection, gains)
-    total_decay = jnp.einsum("kip,lkip->klip", (1 - neighbor_time_decay), time_decay)
+    gained_injection = jnp.einsum("li,pi->lip", injection, gains)
+    total_decay = jnp.einsum("kpi,lkpi->klip", (1 - neighbor_time_decay), time_decay)
     q_hat = jnp.einsum("klip,lip->kp", total_decay, gained_injection)
     return q_hat
 
