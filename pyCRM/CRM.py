@@ -1,7 +1,6 @@
 import numpy as np
 import jax.numpy as jnp
-from jax import grad, jit, vmap
-from jax import random
+from jax import jit
 import pandas as pd
 import pickle
 
@@ -34,7 +33,7 @@ def calc_time_decay(time, taus):
 def calc_nearest_time_decay(time, taus):
     time_diff = jnp.concatenate([jnp.array([time[1] - time[0]]), time[1:] - time[:-1]])
     time_diff_scaled = jnp.outer(time_diff, 1 / taus).reshape(len(time), *taus.shape)
-    time_decay = jnp.exp(-time_diff_scaled)  # / taus.shape[1]
+    time_decay = jnp.exp(-time_diff_scaled)
     return time_decay
 
 
@@ -46,14 +45,12 @@ def q_CRM_perproducer(injection, time, gains, tau):
 
 @jit
 def q_CRM_perpair(injection, time, gains, tau):
+    # i=injector, p=producer, k=production time, l=injection time
     time_decay = calc_time_decay(time, tau)
     neighbor_time_decay = calc_nearest_time_decay(time, tau)
-    gained_injection = jnp.einsum("kj,ij->ki", injection, gains)
-    total_decay = (
-        jnp.einsum("kij,lkij->lkij", (1 - neighbor_time_decay), time_decay)
-        / injection.shape[1]
-    )
-    q_hat = jnp.einsum("lkij,li->ki", total_decay, gained_injection)
+    gained_injection = jnp.einsum("li,ip->lip", injection, gains)
+    total_decay = jnp.einsum("kip,lkip->klip", (1 - neighbor_time_decay), time_decay)
+    q_hat = jnp.einsum("klip,lip->kp", total_decay, gained_injection)
     return q_hat
 
 
@@ -68,11 +65,12 @@ def random_weights(n_i: int, n_j: int, axis: int = 0, seed=None):
 class CRM:
     """A Capacitance Resistance Model history matcher
 
-    CRM uses a physics-inspired mass balance approach to explain production for waterfloods.
-    It treants each injector-producer well pair as a system with mass input, output, and pressure
-    related to the mass balance. Several versions exist. For an exhaustive review, check
-    "A State-of-the-Art Literature Review on Capacitance Resistance Models for Reservoir
-    Characterization and Performance Forecasting" - Holanda et al., 2018.
+    CRM uses a physics-inspired mass balance approach to explain production for
+    waterfloods. It treats each injector-producer well pair as a system with mass input,
+    output, and pressure related to the mass balance. Several versions exist. For an
+    exhaustive review, check "A State-of-the-Art Literature Review on Capacitance
+    Resistance Models for Reservoir Characterization and Performance Forecasting" -
+    Holanda et al., 2018.
 
     Args
     ----------
@@ -81,8 +79,10 @@ class CRM:
         - If 'per-pair', fit tau for each producer-injector pair
         - If 'per-producer', fit tau for each producer (CRMp model)
     constraints (str): How to constrain the gains
-        - If 'up-to one' (default), let gains vary from 0 (no connection) to 1 (all injection goes to producer)
-        - If 'positive', require each gain to be positive (It is unlikely to go negative in real life)
+        - If 'up-to one' (default), let gains vary from 0 (no connection) to
+            1 (all injection goes to producer)
+        - If 'positive', require each gain to be positive
+            (It is unlikely to go negative in real life)
         - If 'sum-to-one', require the gains for each injector to sum to one
             (all production accounted for)
         - If 'sum-to-one injector', require each injector's gains to sum to one
@@ -102,7 +102,7 @@ class CRM:
         if type(primary) != bool:
             raise TypeError("primary must be a boolean")
         self.primary = primary
-        if not constraints in (
+        if constraints not in (
             "positive",
             "up-to one",
             "sum-to-one",
@@ -171,7 +171,10 @@ class CRM:
         return x0
 
     def _opt_numbers(self):
-        """returns the number of gains, taus, and primary production parameters to fit"""
+        """
+        returns the number of gains, taus,
+        and primary production parameters to fit
+        """
         n_inj = self.injection.shape[1]
         n_prod = self.production.shape[1]
         n_gains = n_inj * n_prod
@@ -193,7 +196,6 @@ class CRM:
         n_inj = self.injection.shape[1]
         n_prod = self.production.shape[1]
         n_gains, n_tau, n_primary = self._opt_numbers()
-        n_all = n_gains + n_tau + n_primary
 
         # setting bounds and constraints
         tau_max = (self.time[-1] - self.time[0]) * 5
@@ -286,14 +288,18 @@ class CRM:
         global_fit=False,
         **kwargs,
     ):
-        """Build a CRM model from the production and injection data (production, injection)
+        """Build a CRM model from the production and injection data
 
         Args
         ----------
-        production (ndarray): production rates for each time period, of shape (n_time, n_producers)
-        injection (ndarray): injection rates for each time period, of shape (n_time, n_injectors)
-        time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
-        initial_guess (ndarray): initial guesses for gains, taus, primary production contribution, as one-dimensional ndarray
+        production (ndarray): production rates for each time period, of shape
+            (n_time, n_producers)
+        injection (ndarray): injection rates for each time period, of shape
+            (n_time, n_injectors)
+        time (ndarray): relative time for each rate measurement, starting from 0, of
+            shape (n_time)
+        initial_guess (ndarray): initial guesses for gains, taus, primary production
+            contribution, as one-dimensional ndarray
         random (bool): whether to randomly initialize the gains
         global (bool): whether to use a global optimizer
         **kwargs: keyword arguments to pass to scipy.optimize fitting routine
@@ -306,7 +312,6 @@ class CRM:
         self.production = production
         self.injection = injection
         self.time = time
-        n_inj = injection.shape[1]
         if production.shape[0] != injection.shape[0]:
             raise ValueError(
                 "production and injection do not have the same number of time steps"
@@ -325,8 +330,9 @@ class CRM:
             production = jnp.array(production)
             injection = jnp.array(injection)
             time = jnp.array(time)
-            # residual is an L2 norm
+
             def residual(x, production, injection, time):
+                "residual is an L2 norm"
                 err = production - self._calculate_qhat(x, production, injection, time)
                 return jnp.sum(err ** 2, axis=(0, 1))
 
@@ -367,7 +373,8 @@ class CRM:
         ----------
         injection (ndarray): The injection rates to input to the system
         time (ndarray): The timesteps to predict
-        connections (dict): if present, the gains, tau, gains_producer, tau_producer matrices
+        connections (dict): if present, the gains, tau, gains_producer, tau_producer
+            matrices
 
         Returns
         ----------
@@ -386,7 +393,6 @@ class CRM:
             else self.tau_producer
         )
         production = self.production
-        n_producers = production.shape[1]
 
         if int(injection is None) + int(time is None) == 1:
             raise TypeError("predict() takes 1 or 3 arguments, 2 given")
@@ -404,41 +410,45 @@ class CRM:
 
     def set_rates(self, production=None, injection=None, time=None):
         """Sets production and injection rates and time"""
-        if not production is None:
+        if production is not None:
             self.production = production
-        if not injection is None:
+        if injection is not None:
             self.injection = injection
-        if not time is None:
+        if time is not None:
             self.time = time
 
     def set_connections(
         self, gains=None, tau=None, gains_producer=None, tau_producer=None
     ):
         """Sets waterflood properties"""
-        if not gains is None:
+        if gains is not None:
             self.gains = gains
-        if not tau is None:
+        if tau is not None:
             self.tau = tau
-        if not gains_producer is None:
+        if gains_producer is not None:
             self.gains_producer = gains_producer
-        if not tau_producer is None:
+        if tau_producer is not None:
             self.tau_producer = tau_producer
 
     def residual(self, production=None, injection=None, time=None, connections={}):
         """Calculate the production minus the predicted production for a trained model.
 
-        If the production, injection, and time are not provided, this will use the training values
+        If the production, injection, and time are not provided, this will use the
+        training values
 
         Args
         ----------
-        production (ndarray): The production rates observed, shape (n_timesteps, n_producers)
-        injection (ndarray): The injection rates to input to the system, shape (n_timesteps, n_injectors)
+        production (ndarray): The production rates observed, shape (n_timesteps,
+            n_producers)
+        injection (ndarray): The injection rates to input to the system, shape
+            (n_timesteps, n_injectors)
         time (ndarray): The timesteps to predict
         connections (dict): gains, tau, gains_producer, tau_producer arguments
 
         Returns
         ----------
-        residual (ndarray): The true production data minus the predictions, shape (n_time, n_producers)
+        residual (ndarray): The true production data minus the predictions, shape
+            (n_time, n_producers)
         """
         q_hat = self.predict(injection, time, connections=connections)
         if production is None:
