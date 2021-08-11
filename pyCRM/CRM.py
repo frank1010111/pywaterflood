@@ -21,14 +21,9 @@ def q_primary(production, time, gain_producer, tau_producer):
     ----------
     q_hat: Calculated production, size: Number of time steps
     """
-    q_hat = np.zeros_like(production)
-
-    # Compute primary production component
-    for k in range(len(time)):
-        time_decay = np.exp(- time[k] / tau_producer)
-        q_hat[k] += gain_producer * production[0] * time_decay
+    time_decay = np.exp(-time / tau_producer)
+    q_hat = time_decay * production[0] * gain_producer
     return q_hat
-
 
 @njit
 def q_CRM_perpair(injection, time, gains, taus):
@@ -243,6 +238,8 @@ class CRM():
 
         x0 = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
+        num_cores = kwargs.pop("num_cores", 1)
+        print(kwargs)
 
         def opts(x):
             gains = x[:n_inj]
