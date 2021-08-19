@@ -281,10 +281,9 @@ class CRM():
             def residual(x, production):
                 return sum((production - self._calculate_qhat(x, production, injection, time)) ** 2)
 
-            result = optimize.minimize(residual, x0, bounds=bounds,
-                                       constraints=constraints,
-                                       args=(production, ),
-                                       **kwargs)
+            result = optimize.minimize(
+                residual, x0, bounds=bounds, constraints=constraints, args=(production, ),**kwargs
+            )
             return result
 
         production_perwell = [x for x in self.production.T]
