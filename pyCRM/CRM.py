@@ -1,5 +1,5 @@
 import numpy as np
-from numba import jit, njit, prange
+from numba import njit
 import pandas as pd
 import pickle
 from scipy import optimize
@@ -35,8 +35,10 @@ def q_CRM_perpair(injection, time, gains, taus):
     ----------
     injection (ndarray): Injected fluid, size: Number of time steps
     time (ndarray): Producing times to forecast, size: Number of time steps
-    gains (ndarray): Connectivities between each injector and the producer, size: Number of injectors
-    taus (ndarray): Time constants between each injector and the producer, size: Number of injectors
+    gains (ndarray): Connectivities between each injector and the producer,
+                     size: Number of injectors
+    taus (ndarray): Time constants between each injector and the producer,
+                     size: Number of injectors
 
     Returns
     ----------
@@ -48,14 +50,15 @@ def q_CRM_perpair(injection, time, gains, taus):
 
     # Compute convolved injection rates
     for j in range(injection.shape[1]):
-        conv_injected[0, j] += ((1 - np.exp((time[0] - time[1]) / taus[j]))
-                                * injection[0, j])
+        conv_injected[0, j] += (1 - np.exp((time[0] - time[1]) / taus[j])) * injection[
+            0, j
+        ]
         for k in range(1, n):
-            for l in range(1, k+1):
-                time_decay = ((1 - np.exp((time[l-1] - time[l]) / taus[j]))
-                              * np.exp((time[l] - time[k]) / taus[j])
-                              )
-                conv_injected[k, j] += time_decay * injection[l, j]
+            for m in range(1, k + 1):
+                time_decay = (1 - np.exp((time[m - 1] - time[m]) / taus[j])) * np.exp(
+                    (time[m] - time[k]) / taus[j]
+                )
+                conv_injected[k, j] += time_decay * injection[m, j]
 
     # Calculate waterflood rates
     for k in range(n):
@@ -73,7 +76,8 @@ def q_CRM_perproducer(injection, time, gain, tau):
     ----------
     injection (ndarray): Production, size: Number of time steps
     time (ndarray): Producing times to forecast, size: Number of time steps
-    gains (ndarray): Connectivities between each injector and the producer, size: Number of injectors
+    gains (ndarray): Connectivities between each injector and the producer,
+                      size: Number of injectors
     tau: Time constants all injectors and the producer
 
     Returns
@@ -83,21 +87,25 @@ def q_CRM_perproducer(injection, time, gain, tau):
     tau2 = tau * np.ones(injection.shape[1])
     return q_CRM_perpair(injection, time, gain, tau2)
 
-def random_weights(n_i: int, n_j: int, axis: int=0, seed=None):
+
+def random_weights(n_i: int, n_j: int, axis: int = 0, seed=None):
     rng = np.random.default_rng(seed)
     limit = 10 * (n_i if axis == 0 else n_j)
     vec = rng.integers(0, limit, (n_i, n_j))
     axis_sum = vec.sum(axis, keepdims=True)
     return vec / axis_sum
 
-class CRM():
+
+class CRM:
     """A Capacitance Resistance Model history matcher
 
-    CRM uses a physics-inspired mass balance approach to explain production for waterfloods.
-    It treants each injector-producer well pair as a system with mass input, output, and pressure
-    related to the mass balance. Several versions exist. For an exhaustive review, check
-    "A State-of-the-Art Literature Review on Capacitance Resistance Models for Reservoir
-    Characterization and Performance Forecasting" - Holanda et al., 2018.
+    CRM uses a physics-inspired mass balance approach to explain production for
+     waterfloods.
+    It treants each injector-producer well pair as a system with mass input, output,
+     and pressure related to the mass balance. Several versions exist.
+    For an exhaustive review, check "A State-of-the-Art Literature Review on Capacitance
+      Resistance Models for Reservoir Characterization and Performance Forecasting"
+       - Holanda et al., 2018.
 
     Args
     ----------
@@ -106,39 +114,50 @@ class CRM():
         - If 'per-pair', fit tau for each producer-injector pair
         - If 'per-producer', fit tau for each producer (CRMp model)
     constraints (str): How to constrain the gains
-        - If 'up-to one' (default), let gains vary from 0 (no connection) to 1 (all injection goes to producer)
-        - If 'positive', require each gain to be positive (It is unlikely to go negative in real life)
+        - If 'up-to one' (default), let gains vary from 0 (no connection) to 1
+           (all injection goes to producer)
+        - If 'positive', require each gain to be positive
+           (It is unlikely to go negative in real life)
         - If 'sum-to-one', require the gains for each injector to sum to one
             (all production accounted for)
-        - If 'sum-to-one injector' (not implemented), require each injector's gains to sum to one
-            (all injection accounted for)
+        - If 'sum-to-one injector' (not implemented), require each injector's gains to
+            sum to one (all injection accounted for)
 
     Examples
     ----------
     forthcoming
     """
-    def __init__(self, primary: bool = True,
-                 tau_selection: str = 'per-pair',
-                 constraints: str = 'positive'):
+
+    def __init__(
+        self,
+        primary: bool = True,
+        tau_selection: str = "per-pair",
+        constraints: str = "positive",
+    ):
         if type(primary) != bool:
-            raise TypeError('primary must be a boolean')
+            raise TypeError("primary must be a boolean")
         self.primary = primary
-        if not constraints in ('positive', 'up-to one',
-                                 'sum-to-one', 
-                                'sum-to-one injector'):
+        if constraints not in (
+            "positive",
+            "up-to one",
+            "sum-to-one",
+            "sum-to-one injector",
+        ):
             raise ValueError("Invalid constraints")
         self.constraints = constraints
         self.tau_selection = tau_selection
-        if tau_selection == 'per-pair':
+        if tau_selection == "per-pair":
             self.q_CRM = q_CRM_perpair
-        elif tau_selection == 'per-producer':
+        elif tau_selection == "per-producer":
             self.q_CRM = q_CRM_perproducer
         else:
-            raise ValueError('tau_selection must be one of' +
-                             '("per-pair","per-producer")' +
-                             f', not {tau_selection}')
+            raise ValueError(
+                "tau_selection must be one of"
+                + '("per-pair","per-producer")'
+                + f", not {tau_selection}"
+            )
 
-    def _get_initial_guess(self, tau_selection: str = '', random=False):
+    def _get_initial_guess(self, tau_selection: str = "", random=False):
         """Creates the initial guesses for the CRM model parameters
 
         Args
@@ -173,17 +192,24 @@ class CRM():
             tau_guess1 = d_t * np.ones((n_prod, n_inj))
         else:  # 'per-producer'
             tau_guess1 = d_t * np.ones((n_prod, 1))
-    
+
         if self.primary:
-            x0 = [ np.concatenate([
-                    gains_guess1[i,:],
-                    tau_guess1[i,:],
-                    gains_producer_guess1[[i]],
-                    tau_producer_guess1[[i]]
-                ]) for i in range(n_prod)
+            x0 = [
+                np.concatenate(
+                    [
+                        gains_guess1[i, :],
+                        tau_guess1[i, :],
+                        gains_producer_guess1[[i]],
+                        tau_producer_guess1[[i]],
+                    ]
+                )
+                for i in range(n_prod)
             ]
         else:
-            x0 = [np.concatenate([gains_guess1[i,:], tau_guess1[i,:]]) for i in range(n_prod)]
+            x0 = [
+                np.concatenate([gains_guess1[i, :], tau_guess1[i, :]])
+                for i in range(n_prod)
+            ]
         return x0
 
     def _opt_numbers(self):
@@ -192,7 +218,7 @@ class CRM():
         and primary production parameters to fit
         """
         n_inj = self.injection.shape[1]
-        n_prod = self.production.shape[1]
+        # n_prod = self.production.shape[1]
         n_gains = n_inj
         if self.tau_selection == "per-pair":
             n_tau = n_gains
@@ -204,14 +230,13 @@ class CRM():
             n_primary = 0
         return n_gains, n_tau, n_primary
 
-
-    def _get_bounds(self, constraints: str = ''):
+    def _get_bounds(self, constraints: str = ""):
         "Create bounds for the model from initialized constraints"
         if constraints:
             self.constraints = constraints
 
         n_inj = self.injection.shape[1]
-        if self.tau_selection == 'per-pair':
+        if self.tau_selection == "per-pair":
             n = n_inj * 2
         else:
             n = n_inj + 1
@@ -219,37 +244,50 @@ class CRM():
         if self.primary:
             n = n + 2
 
-        if self.constraints == 'positive':
-            bounds = ((0, np.inf), ) * n
+        if self.constraints == "positive":
+            bounds = ((0, np.inf),) * n
             constraints = ()
-        elif self.constraints == 'sum-to-one':
-            bounds = ((0, np.inf), ) * n
+        elif self.constraints == "sum-to-one":
+            bounds = ((0, np.inf),) * n
 
             def constrain(x):
                 x = x[:n_inj]
                 return np.sum(x) - 1
-            constraints = ({'type': 'eq', 'fun': constrain})
-        elif self.constraints == 'sum-to-one injector':
-            raise NotImplementedError('sum-to-one injector is not implemented')
-        elif self.constraints == 'up-to one':
+
+            constraints = {"type": "eq", "fun": constrain}
+        elif self.constraints == "sum-to-one injector":
+            raise NotImplementedError("sum-to-one injector is not implemented")
+        elif self.constraints == "up-to one":
             lb = np.full(n, 0)
             ub = np.full(n, np.inf)
             ub[:n_inj] = 1
             bounds = tuple(zip(lb, ub))
             constraints = ()
         else:
-            bounds = ((0, np.inf), ) * n
+            bounds = ((0, np.inf),) * n
             constraints = ()
         return bounds, constraints
 
-    def fit(self, production, injection, time, initial_guess=None,num_cores=1, random=False, **kwargs):
+    def fit(
+        self,
+        production,
+        injection,
+        time,
+        initial_guess=None,
+        num_cores=1,
+        random=False,
+        **kwargs,
+    ):
         """Build a CRM model from the production and injection data (production, injection)
 
         Args
         ----------
-        production (ndarray): production rates for each time period, of shape (n_time, n_producers)
-        injection (ndarray): injection rates for each time period, of shape (n_time, n_injectors)
-        time (ndarray): relative time for each rate measurement, starting from 0, of shape (n_time)
+        production (ndarray): production rates for each time period,
+                               shape: (n_time, n_producers)
+        injection (ndarray): injection rates for each time period,
+                              shape: (n_time, n_injectors)
+        time (ndarray): relative time for each rate measurement, starting from 0,
+                         shape: (n_time)
         initial_guess (ndarray): initial guesses for gains, taus, primary production
             contribution, of shape (len(guess), n_producers)
         num_cores (int): number of cores to run fitting procedure on, defaults to 1
@@ -263,11 +301,14 @@ class CRM():
         self.production = production
         self.injection = injection
         self.time = time
-        n_inj = injection.shape[1]
         if production.shape[0] != injection.shape[0]:
-            raise ValueError("production and injection do not have the same number of time steps")
+            raise ValueError(
+                "production and injection do not have the same number of time steps"
+            )
         if production.shape[0] != time.shape[0]:
-            raise ValueError("production and time do not have the same number of timesteps")
+            raise ValueError(
+                "production and time do not have the same number of timesteps"
+            )
 
         if not initial_guess:
             initial_guess = self._get_initial_guess(random=random)
@@ -275,14 +316,21 @@ class CRM():
         num_cores = kwargs.pop("num_cores", 1)
         print(kwargs)
 
-
         def fit_well(production, x0):
             # residual is an L2 norm
             def residual(x, production):
-                return sum((production - self._calculate_qhat(x, production, injection, time)) ** 2)
+                return sum(
+                    (production - self._calculate_qhat(x, production, injection, time))
+                    ** 2
+                )
 
             result = optimize.minimize(
-                residual, x0, bounds=bounds, constraints=constraints, args=(production, ),**kwargs
+                residual,
+                x0,
+                bounds=bounds,
+                constraints=constraints,
+                args=(production,),
+                **kwargs,
             )
             return result
 
@@ -290,14 +338,14 @@ class CRM():
         if num_cores == 1:
             results = map(fit_well, production_perwell, initial_guess)
         else:
-            results = (
-                Parallel(n_jobs=num_cores)
-                (delayed(fit_well)(p) for p,x0 in zip(production_perwell, initial_guess))
+            results = Parallel(n_jobs=num_cores)(
+                delayed(fit_well)(p) for p, x0 in zip(production_perwell, initial_guess)
             )
 
-        opts_perwell = [self._split_opts(r['x']) for r in results]
-        gains_perwell, tau_perwell, gains_producer, tau_producer = \
-            map(list, zip(*opts_perwell))
+        opts_perwell = [self._split_opts(r["x"]) for r in results]
+        gains_perwell, tau_perwell, gains_producer, tau_producer = map(
+            list, zip(*opts_perwell)
+        )
 
         self.gains = np.vstack(gains_perwell)
         self.tau = np.vstack(tau_perwell)
@@ -305,7 +353,13 @@ class CRM():
         self.tau_producer = np.array(tau_producer)
         return self
 
-    def _calculate_qhat(self, x: np.ndarray, production: np.ndarray, injection: np.ndarray, time: np.ndarray):
+    def _calculate_qhat(
+        self,
+        x: np.ndarray,
+        production: np.ndarray,
+        injection: np.ndarray,
+        time: np.ndarray,
+    ):
         gains, tau, gain_producer, tau_producer = self._split_opts(x)
         if self.primary:
             q_hat = q_primary(production, time, gain_producer, tau_producer)
@@ -317,12 +371,12 @@ class CRM():
 
     def _split_opts(self, x: np.ndarray):
         n_inj = self.injection.shape[1]
-        n_prod = self.production.shape[1]
+        # n_prod = self.production.shape[1]
         n_gains, n_tau, n_primary = self._opt_numbers()
 
         gains = x[:n_inj]
-        if self.tau_selection == 'per-pair':
-            tau = x[n_inj:n_inj * 2]
+        if self.tau_selection == "per-pair":
+            tau = x[n_inj : n_inj * 2]
         else:
             tau = x[n_inj]
         if self.primary:
@@ -331,14 +385,13 @@ class CRM():
         else:
             gain_producer = 0
             tau_producer = 1
-        if self.tau_selection == 'per-pair':
+        if self.tau_selection == "per-pair":
             tau[tau < 1e-10] = 1e-10
         elif tau < 1e-10:
             tau = 1e-10
         if tau_producer < 1e-10:
             tau_producer = 1e-10
         return gains, tau, gain_producer, tau_producer
-
 
     def predict(self, injection=None, time=None, connections={}):
         """Predict production for a trained model.
@@ -382,8 +435,9 @@ class CRM():
 
         q_hat = np.zeros((len(time), n_producers))
         for i in range(n_producers):
-            q_hat[:, i] += q_primary(production[:, i], time, gains_producer[i],
-                                     tau_producer[i])
+            q_hat[:, i] += q_primary(
+                production[:, i], time, gains_producer[i], tau_producer[i]
+            )
             q_hat[:, i] += self.q_CRM(injection, time, gains[i, :], tau[i])
         return q_hat
 
@@ -412,17 +466,21 @@ class CRM():
     def residual(self, production=None, injection=None, time=None):
         """Calculate the production minus the predicted production for a trained model.
 
-        If the production, injection, and time are not provided, this will use the training values
+        If the production, injection, and time are not provided, this will use the
+         training values
 
         Args
         ----------
-        production (ndarray): The production rates observed, shape (n_timesteps, n_producers)
-        injection (ndarray): The injection rates to input to the system, shape (n_timesteps, n_injectors)
+        production (ndarray): The production rates observed,
+                               shape: (n_timesteps, n_producers)
+        injection (ndarray): The injection rates to input to the system,
+                              shape: (n_timesteps, n_injectors)
         time (ndarray): The timesteps to predict
 
         Returns
         ----------
-        residual (ndarray): The true production data minus the predictions, shape (n_time, n_producers)
+        residual (ndarray): The true production data minus the predictions,
+                             shape (n_time, n_producers)
         """
         q_hat = self.predict(injection, time)
         if production is None:
@@ -431,19 +489,22 @@ class CRM():
 
     def to_excel(self, fname):
         "Write trained model to an Excel file"
-        for x in ('gains', 'tau', 'gains_producer', 'tau_producer'):
+        for x in ("gains", "tau", "gains_producer", "tau_producer"):
             if x not in self.__dict__.keys():
-                raise(ValueError('Model has not been trained'))
+                raise (ValueError("Model has not been trained"))
         with pd.ExcelWriter(fname) as f:
-            pd.DataFrame(self.gains).to_excel(f, sheet_name='Gains')
-            pd.DataFrame(self.tau).to_excel(f, sheet_name='Taus')
-            (pd.DataFrame({'Producer gains': self.gains_producer,
-                           'Producer taus': self.tau_producer}
-                          )
-             .to_excel(f, sheet_name='Primary production')
-             )
+            pd.DataFrame(self.gains).to_excel(f, sheet_name="Gains")
+            pd.DataFrame(self.tau).to_excel(f, sheet_name="Taus")
+            (
+                pd.DataFrame(
+                    {
+                        "Producer gains": self.gains_producer,
+                        "Producer taus": self.tau_producer,
+                    }
+                ).to_excel(f, sheet_name="Primary production")
+            )
 
     def to_pickle(self, fname):
         "Write trained model to a pickle file"
-        with open(fname, 'wb') as f:
+        with open(fname, "wb") as f:
             pickle.dump(self, f)
