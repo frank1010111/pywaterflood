@@ -12,6 +12,19 @@ from scipy import optimize
 
 @jit
 def q_primary(production, time, gain_producer, tau_producer):
+    """Calculates primary production contribution using Arps equation with b=0
+
+    Args
+    ----------
+    production (ndarray): Production, size: Number of time steps x producers
+    time (ndarray): Producing times to forecast, size: Number of time steps x producers
+    gain_producer (ndarray): Arps q_i factor, size: Number of producers
+    tau_producer (ndarray): Arps time constant, size: Number of producers
+
+    Returns
+    ----------
+    q_hat (ndarray): Calculated production, size: Number of time steps x producers
+    """
     decay = jnp.exp(-jnp.einsum("i,j", time, 1 / tau_producer))
     q_hat = decay * production[0, :] * gain_producer
     return q_hat
@@ -45,6 +58,20 @@ def q_CRM_perproducer(injection, time, gains, tau):
 
 @jit
 def q_CRM_perpair(injection, time, gains, tau):
+    """Calculates per injector-producer pair production for all injectors on one producer
+    using CRM model
+
+    Args
+    ----------
+    injection (ndarray): Injected fluid
+    time (ndarray): Producing times to forecast
+    gains (ndarray): Connectivities between each injector and the producer
+    taus (ndarray): Time constants between each injector and the producer
+
+    Returns
+    ----------
+    q_hat: Calculated production
+    """
     # i=injector, p=producer, k=production time, l=injection time
     time_decay = calc_time_decay(time, tau)
     neighbor_time_decay = calc_nearest_time_decay(time, tau)
