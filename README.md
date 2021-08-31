@@ -6,21 +6,26 @@ A literature review has been written by Holanda, Gildin, Jensen, Lake and Kabir,
 > The Capacitance Resistance Model (CRM) is a fast way for modeling and simulating gas and waterflooding recovery processes, making it a useful tool for improving flood management in real-time. CRM is an input-output and material balance-based model, and requires only injection and production history, which are the most readily available data gathered throughout the production life of a reservoir.
 
 # Dependencies
-see requirements.yml  
+see requirements.yml
+```
     numpy
     numba
     pandas
     scipy
     joblib
     openpyxl
-
+```
 # Install
 The source can be downloaded from <https://github.com/frank1010111/pyCRM>
 
 You can install dependencies with  
-    conda env update --file requirements.yml
+```
+conda env update --file requirements.yml
+```
 Then, from the base directory, install the package with  
-    pip install .
+```
+pip install .
+```
 
 # A simple example
     import pandas as pd
