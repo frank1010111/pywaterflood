@@ -314,7 +314,6 @@ class CRM:
             initial_guess = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
         num_cores = kwargs.pop("num_cores", 1)
-        print(kwargs)
 
         def fit_well(production, x0):
             # residual is an L2 norm
