@@ -1,4 +1,4 @@
-_CRM_ is a physics-inspired model for estimating waterflood performance. It estimates the connectivities and time decays between injectors and producers.
+Pywaterflood provides tools for capacitance resistance modeling, a physics-inspired model for estimating waterflood performance. It estimates the connectivities and time decays between injectors and producers.
 
 # Overview
 
@@ -16,12 +16,8 @@ see requirements.yml
     openpyxl
 ```
 # Install
-The source can be downloaded from <https://github.com/frank1010111/pyCRM>
+The source can be downloaded from <https://github.com/frank1010111/pywaterflood>
 
-You can install dependencies with  
-```
-conda env update --file requirements.yml
-```
 Then, from the base directory, install the package with  
 ```
 pip install .
@@ -29,7 +25,7 @@ pip install .
 
 # A simple example
     import pandas as pd
-    from pyCRM import CRM
+    from pywaterflood import CRM
 
     prod = pd.read_csv('testing/data/production.csv').values
     inj = pd.read_csv('testing/data/injection.csv').values

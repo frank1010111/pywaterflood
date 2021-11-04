@@ -1,7 +1,7 @@
 import pytest
 from itertools import product
 import numpy as np
-from pyCRM.multiwellproductivity import (
+from pywaterflood.multiwellproductivity import (
     calc_gains_homogeneous,
     translate_locations,
     calc_A_ij,

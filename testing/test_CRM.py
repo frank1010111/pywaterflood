@@ -4,9 +4,7 @@ import numpy as np
 
 import sys
 sys.path.append('../pyCRM/')
-from pyCRM import CRM
-
-#import CRM
+from pywaterflood import CRM
 
 primary = (True, False)
 tau_selection = ('per-pair', 'per-producer')

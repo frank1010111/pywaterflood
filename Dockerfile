@@ -14,4 +14,4 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py38_4.9.2-Linux
 ENV PATH /opt/conda/bin:$PATH
 COPY ./requirements.yml ./requirements.yml
 RUN conda env update -n base -f requirements.yml
-RUN pip install git+https://github.com/frank1010111/pyCRM
+RUN pip install git+https://github.com/frank1010111/pywaterflood
