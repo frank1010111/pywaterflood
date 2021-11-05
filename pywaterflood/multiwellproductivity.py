@@ -131,10 +131,19 @@ def calc_A_ij(
     x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
 ) -> float:
     """Calculate element in the influence matrix
-    
-    .. math
-      2 \\pi y_D (\\frac13 - y_i/y_D)
-    
+
+    .. math:: 
+        A_{ij} = 2 \\pi y_D (\\frac13 - \\frac{y_i}{y_D} + 
+            \\frac{y_i^2 + y_j^2}{2 y_D^2}) 
+            + \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i) 
+            \\cos(m \\pi \\tilde x_j)
+    where
+
+    .. math::
+        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right) 
+        + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
+        {\\sinh\\left(m\\pi y_D \\right)}
+
     Args
     ----
     x_i : float
@@ -165,6 +174,16 @@ def calc_summed_term(
     x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
 ) -> float:
     """Calculate summed term using Valkó 2000 equations A4-7
+
+    .. math::
+        \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i) 
+        \\cos(m \\pi \\tilde x_j)
+    where
+    
+    .. math::
+        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right) 
+        + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
+        {\\sinh\\left(m\\pi y_D \\right)}
     
     Args
     ----
