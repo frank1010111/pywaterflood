@@ -39,4 +39,6 @@ html_theme = "sphinx_rtd_theme"
 napoleon_include_private_with_doc = False
 
 # Autodoc
-autodoc_default_options = {"members": True, "undoc-members": True,     "private-members": False}
+autodoc_default_options = {
+    "members": True, "undoc-members": True,     "private-members": False
+}
