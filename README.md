@@ -1,21 +1,12 @@
-Pywaterflood provides tools for capacitance resistance modeling, a physics-inspired model for estimating waterflood performance. It estimates the connectivities and time decays between injectors and producers.
+# `pywaterflood`: Waterflood Connectivity Analysis 
+`pywaterflood` provides tools for capacitance resistance modeling, a physics-inspired model for estimating waterflood performance. It estimates the connectivities and time decays between injectors and producers.
 
-# Overview
+## Overview
 
 A literature review has been written by Holanda, Gildin, Jensen, Lake and Kabir, entitled "A State-of-the-Art Literature Review on Capacitance Resistance Models for Reservoir Characterization and Performance Forecasting." They describe CRM as the following:
 > The Capacitance Resistance Model (CRM) is a fast way for modeling and simulating gas and waterflooding recovery processes, making it a useful tool for improving flood management in real-time. CRM is an input-output and material balance-based model, and requires only injection and production history, which are the most readily available data gathered throughout the production life of a reservoir.
 
-# Dependencies
-see requirements.yml
-```
-    numpy
-    numba
-    pandas
-    scipy
-    joblib
-    openpyxl
-```
-# Install
+## Getting started
 The source can be downloaded from <https://github.com/frank1010111/pywaterflood>
 
 Then, from the base directory, install the package with  
@@ -23,7 +14,7 @@ Then, from the base directory, install the package with
 pip install .
 ```
 
-# A simple example
+## A simple example
     import pandas as pd
     from pywaterflood import CRM
 
