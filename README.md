@@ -1,4 +1,6 @@
 # `pywaterflood`: Waterflood Connectivity Analysis 
+[![Documentation Status](https://readthedocs.org/projects/pywaterflood/badge/?version=latest)](https://pywaterflood.readthedocs.io/en/latest/?badge=latest)  
+
 `pywaterflood` provides tools for capacitance resistance modeling, a physics-inspired model for estimating waterflood performance. It estimates the connectivities and time decays between injectors and producers.
 
 ## Overview
