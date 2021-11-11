@@ -20,8 +20,8 @@ pip install pywaterflood
 
     gh_url = https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
     prod = pd.read_csv(gh_url + 'production.csv', header=None).values
-    inj = pd.read_csv(gh_url + \"injection.csv\", header=None).values
-    time = pd.read_csv(gh_url + \"time.csv\", header=None).values[:,0]
+    inj = pd.read_csv(gh_url + "injection.csv", header=None).values
+    time = pd.read_csv(gh_url + "time.csv", header=None).values[:,0]
 
     crm = CRM(tau_selection='per-pair', constraints='up-to one')
     crm.fit(prod, inj, time)
