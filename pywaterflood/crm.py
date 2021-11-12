@@ -93,7 +93,7 @@ def q_CRM_perproducer(
     Args
     ----------
     injection : ndarray
-        Production, size: Number of time steps
+        injected fluid in reservoir volumes, size: Number of time steps
     time : ndarray
         Producing times to forecast, size: Number of time steps
     gains : ndarray
@@ -111,11 +111,43 @@ def q_CRM_perproducer(
     return q_CRM_perpair(injection, time, gain, tau2)
 
 
+@njit
+def _pressure_diff(pressure: ndarray) -> ndarray:
+    """pressure differences between each producer each timestep"""
+    n_t, n_p = pressure.shape
+    pressure_diff = np.zeros((n_p, n_p, n_t))
+    for k in range(n_p):
+        for j in range(n_p):
+            for t in range(1, n_t):
+                pressure_diff[k, j, t] = pressure[t - 1, j] - pressure[t - 1, k]
+    return pressure_diff
+
+
+def q_BHP(pressure: ndarray, v_matrix: ndarray) -> ndarray:
+    """Calculates the production effect from bottom-hole pressure variation
+
+    Args
+    ----
+    pressure : ndarray
+        bottomhole pressure, shape (n_time, n_producers)
+    v_matrix : ndarray
+        connectivity between different producers, shape (n_producers, n_producers)
+
+    Returns
+    -------
+    q : ndarray
+        production from changing BHP
+    """
+    pressure_diff = _pressure_diff(pressure)
+    q = np.einsum("kj,kjt->jt", v_matrix, pressure_diff)
+    return q
+
+
 def random_weights(
     n_i: int, n_j: int, axis: int = 0, seed: Optional[int] = None
 ) -> ndarray:
     """Generates random weights for producer-injector gains
-    
+
     Args
     ----
     n_i : int
@@ -393,7 +425,7 @@ class CRM:
 
     def to_excel(self, fname: str):
         """Write trained model to an Excel file
-        
+
         Args
         ----
         fname : str
@@ -415,7 +447,7 @@ class CRM:
 
     def to_pickle(self, fname: str):
         """Write trained model to a pickle file
-        
+
         Args
         -----
         fname : str
