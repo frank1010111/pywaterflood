@@ -3,8 +3,8 @@ from itertools import product
 import numpy as np
 
 import sys
-sys.path.append('../pyCRM/')
 from pywaterflood import CRM
+from pywaterflood.crm import q_BHP
 
 primary = (True, False)
 tau_selection = ('per-pair', 'per-producer')
@@ -33,6 +33,17 @@ def trained_model(reservoir_simulation_data):
         crm.tau_producer = np.genfromtxt(data_dir + 'tau_producer.csv', delimiter=',')
         return crm
     return _trained_model
+
+
+def test_BHP(reservoir_simulation_data):
+    "q_BHP functions"
+    production = reservoir_simulation_data[1]
+    _, nprod = production.shape
+    pressure_test = production.copy()
+    rng = np.random.default_rng(42)
+    v_matrix = rng.normal(0, 1, (nprod,nprod))
+    q = q_BHP(pressure_test, v_matrix)
+    assert not np.isnan(q).any()
 
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
 class TestInstantiate:
