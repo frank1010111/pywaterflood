@@ -90,6 +90,37 @@ class TestPredict:
 #@pytest.mark.skip()
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
 class TestFit:
+    def test_validate_timeseries(self, reservoir_simulation_data, primary, tau_selection, constraints):
+        injection, production, time = reservoir_simulation_data
+        crm = CRM(primary, tau_selection, constraints)
+        with pytest.raises(ValueError):
+            crm.set_rates(production[:-5], injection, time)
+        with pytest.raises(ValueError):
+            crm.set_rates(production, injection[:-5], time)
+        with pytest.raises(ValueError):
+            crm.set_rates(production, injection, time[:-5])
+        prod_bad = production.copy()
+        prod_bad[4,0] = -1
+        with pytest.raises(ValueError):
+            crm.set_rates(prod_bad, injection, time)
+        prod_bad[4,0] = np.nan
+        with pytest.raises(ValueError):
+            crm.set_rates(prod_bad, injection, time)
+        inj_bad = injection.copy()
+        inj_bad[2,2] = -1
+        with pytest.raises(ValueError):
+            crm.set_rates(production, inj_bad, time)
+        inj_bad[2,2] = np.nan
+        with pytest.raises(ValueError):
+            crm.set_rates(production, inj_bad, time)
+        time_bad = time.copy()
+        time_bad[0] = -1
+        with pytest.raises(ValueError):
+            crm.set_rates(time=time_bad)
+        time_bad[0] = np.nan
+        with pytest.raises(ValueError):
+            crm.set_rates(time=time_bad)
+            
     def test_fit_fails(self, reservoir_simulation_data, primary, tau_selection, constraints):
         crm = CRM(primary, tau_selection, constraints)
         injection, production, time = reservoir_simulation_data
