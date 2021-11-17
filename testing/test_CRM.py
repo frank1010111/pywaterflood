@@ -1,8 +1,8 @@
-import pytest
-from itertools import product
-import numpy as np
-
 import sys
+from itertools import product
+
+import numpy as np
+import pytest
 from pywaterflood import CRM
 from pywaterflood.crm import q_BHP
 

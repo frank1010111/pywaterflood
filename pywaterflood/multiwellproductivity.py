@@ -1,8 +1,8 @@
 import numpy as np
-from numpy import ndarray
 import pandas as pd
 import scipy.linalg as sl
 from numba import njit
+from numpy import ndarray
 
 idx = pd.IndexSlice
 
