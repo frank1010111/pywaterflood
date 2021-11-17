@@ -1,12 +1,12 @@
+import pickle
+from typing import Optional, Tuple, Union
 
 import numpy as np
-from numpy import ndarray
-from numba import njit
 import pandas as pd
-import pickle
-from scipy import optimize
-from typing import Optional, Tuple, Union
 from joblib import Parallel, delayed
+from numba import njit
+from numpy import ndarray
+from scipy import optimize
 
 
 @njit
@@ -611,3 +611,40 @@ class CRM:
         if tau_producer < 1e-10:
             tau_producer = 1e-10
         return gains, tau, gain_producer, tau_producer
+
+
+def _validate_inputs(production: Optional[ndarray]=None, injection: Optional[ndarray]=None, time: Optional[ndarray]=None, pressure: Optional[ndarray]=None) -> None:
+    "Validates shapes and values of inputs"
+    inputs = {"production": production, "injection": injection, "time": time, "pressure": pressure}
+    inputs = {key: val for key, val in inputs.items() if val is not None}
+    # Shapes
+    test_prod_inj_timesteps = production is not None and injection is not None
+    if  test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
+        raise ValueError(
+            "production and injection do not have the same number of time steps"
+        )
+    if time is not None:
+        for timeseries in inputs:
+            if (inputs[timeseries].shape[0] != time.shape[0]):
+                raise ValueError(
+                    f"{timeseries} and time do not have the same number of timesteps"
+                )
+    if production is not None:
+        if (injection is not None) and (production.shape[0] != injection.shape[0]):
+            raise ValueError(
+                "production and injection do not have the same number of timesteps"
+            )
+        if (pressure is not None) and (production.shape != pressure.shape):
+            raise ValueError(
+                "production and pressure are not of the same shape"
+            )
+    if (injection is not None) and (pressure is not None) and (injection.shape[0] != pressure.shape[0]):
+        raise ValueError(
+                "injection and pressure do not have the same number of timesteps"
+            )
+    # Values
+    for timeseries in inputs:
+        if np.any(np.isnan(inputs[timeseries])):
+            raise ValueError(f"{timeseries} cannot have NaNs")
+        if np.any(inputs[timeseries] < 0.0):
+            raise ValueError(f"{timeseries} cannot be negative")
