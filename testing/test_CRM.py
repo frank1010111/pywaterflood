@@ -21,6 +21,7 @@ def reservoir_simulation_data():
     time = np.genfromtxt(data_dir + "time.csv", delimiter=",")
     return injection, production, time
 
+
 @pytest.fixture
 def trained_model(reservoir_simulation_data):
     def _trained_model(*args, **kwargs):
