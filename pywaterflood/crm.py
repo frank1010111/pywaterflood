@@ -270,17 +270,11 @@ class CRM:
         ----------
         self: trained model
         """
+        _validate_inputs(production, injection, time)
         self.production = production
         self.injection = injection
         self.time = time
-        if production.shape[0] != injection.shape[0]:
-            raise ValueError(
-                "production and injection do not have the same number of time steps"
-            )
-        if production.shape[0] != time.shape[0]:
-            raise ValueError(
-                "production and time do not have the same number of timesteps"
-            )
+        
 
         if not initial_guess:
             initial_guess = self._get_initial_guess(random=random)
@@ -378,6 +372,7 @@ class CRM:
 
     def set_rates(self, production=None, injection=None, time=None):
         """Sets production and injection rates and time"""
+        _validate_inputs(production, injection, time)
         if production is not None:
             self.production = production
         if injection is not None:
