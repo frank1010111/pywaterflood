@@ -20,7 +20,7 @@ pip install pywaterflood
     import pandas as pd
     from pywaterflood import CRM
 
-    gh_url = https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+    gh_url = "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
     prod = pd.read_csv(gh_url + 'production.csv', header=None).values
     inj = pd.read_csv(gh_url + "injection.csv", header=None).values
     time = pd.read_csv(gh_url + "time.csv", header=None).values[:,0]
