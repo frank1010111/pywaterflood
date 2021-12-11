@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - master
+
 jobs:
   linting:
     name: Linting
@@ -18,10 +19,10 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Linting
-        run: |
-          pip install pre-commit
-          pre-commit run --all-files
+      #- name: Linting
+      #  run: |
+      #    pip install pre-commit
+      #    pre-commit run --all-files
 
   tests:
     needs: linting
