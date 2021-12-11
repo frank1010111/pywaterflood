@@ -8,6 +8,22 @@ on:
       - master
 
 jobs:
+  linting:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: 3.7
+
+      - name: Linting
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+
   tests:
     name: ${{ matrix.os }} / ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}-latest
