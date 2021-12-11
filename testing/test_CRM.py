@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from itertools import product
-
 import numpy as np
 import pytest
+
 from pywaterflood import CRM
 from pywaterflood.crm import CrmCompensated, q_bhp
 
@@ -56,6 +56,16 @@ def test_q_bhp():
     producer_gains = np.ones(n_prod)
     q = q_bhp(pressure[:, 0], pressure, producer_gains)
     assert np.allclose(q[-1], -2), "pressure increase -> drop production"
+
+
+def test_q_bhp_nonan(reservoir_simulation_data):
+    "q_BHP functions"
+    production = reservoir_simulation_data[1]
+    _, nprod = production.shape
+    pressure_test = production.copy()
+    rng = np.random.default_rng(42)
+    v_matrix = rng.normal(0, 1, (nprod, nprod))
+    q = q_bhp(pressure_test, v_matrix)
     assert not np.isnan(q).any()
 
 
