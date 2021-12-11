@@ -40,5 +40,7 @@ napoleon_include_private_with_doc = False
 
 # Autodoc
 autodoc_default_options = {
-    "members": True, "undoc-members": True,     "private-members": False
+    "members": True,
+    "undoc-members": True,
+    "private-members": False,
 }

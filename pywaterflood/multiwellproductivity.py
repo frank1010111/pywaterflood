@@ -16,8 +16,8 @@ def calc_gains_homogeneous(
     ----------
     locations : pd.DataFrame
         columns include:
-        `X` : x-location for well,
-        `Y` : y-location for well, 
+        `X` : x-location for well
+        `Y` : y-location for well
         `Type`: ("Producer" or "Injector")
     x_e : float
         scaling in x-direction (unit size)
@@ -36,16 +36,16 @@ def calc_gains_homogeneous(
 
     References
     ----------
-    Kaviani, D. and Valkó, P.P., 2010. Inferring interwell connectivity using multiwell \
-    productivity index (MPI). Journal of Petroleum Science and Engineering, 73(1-2), \
-    pp.48-58.
+    Kaviani, D. and Valkó, P.P., 2010. Inferring interwell connectivity using \
+    multiwell productivity index (MPI). Journal of Petroleum Science and Engineering, \
+    73(1-2), p.48-58.
     """
     locations = locations.copy()
     locations[["X", "Y"]] /= x_e
     y_D = y_e / x_e
     A_prod = calc_influence_matrix(locations, y_D, "prod").astype(float)
     A_conn = calc_influence_matrix(locations, y_D, "conn").astype(float)
-    A_prod_inv = np.linalg.inv(A_prod.values)
+    A_prod_inv = sl.inv(A_prod.values)
     term1 = A_prod_inv / np.sum(A_prod_inv)
     term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.values - 1
     term3 = A_prod_inv @ A_conn.values
@@ -132,15 +132,15 @@ def calc_A_ij(
 ) -> float:
     """Calculate element in the influence matrix
 
-    .. math:: 
-        A_{ij} = 2 \\pi y_D (\\frac13 - \\frac{y_i}{y_D} + 
-            \\frac{y_i^2 + y_j^2}{2 y_D^2}) 
-            + \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i) 
+    .. math::
+        A_{ij} = 2 \\pi y_D (\\frac13 - \\frac{y_i}{y_D} +
+            \\frac{y_i^2 + y_j^2}{2 y_D^2})
+            + \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i)
             \\cos(m \\pi \\tilde x_j)
     where
 
     .. math::
-        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right) 
+        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right)
         + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
         {\\sinh\\left(m\\pi y_D \\right)}
 
@@ -176,15 +176,15 @@ def calc_summed_term(
     """Calculate summed term using Valkó 2000 equations A4-7
 
     .. math::
-        \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i) 
+        \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i)
         \\cos(m \\pi \\tilde x_j)
     where
-    
+
     .. math::
-        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right) 
+        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right)
         + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
         {\\sinh\\left(m\\pi y_D \\right)}
-    
+
     Args
     ----
     x_i : float
