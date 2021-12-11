@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 include: "/.py?$"
 repos:
   - repo: https://github.com/psf/black
@@ -63,3 +64,16 @@ repos:
     rev: v0.8.0.4
     hooks:
       - id: shellcheck
+=======
+include: '/.py?$'
+repos:
+-   repo: https://github.com/psf/black
+    rev: stable
+    hooks:
+      - id: black
+        language_version: python3 # Should be a command that runs python3.6+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v1.2.3
+    hooks:
+    - id: flake8
+>>>>>>> 863dc9b (added pre-commit hooks)
