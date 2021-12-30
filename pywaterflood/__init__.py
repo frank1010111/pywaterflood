@@ -8,8 +8,8 @@ translate_location : a function for moving things from the real world
   into dimensionless-land
 """
 import sys
-from crm import CRM
-from multiwellproductivity import (  # noqa: F401
+from pywaterflood.crm import CRM
+from pywaterflood.multiwellproductivity import (  # noqa: F401
     calc_gains_homogeneous,
     translate_locations,
 )

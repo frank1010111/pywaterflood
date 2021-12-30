@@ -12,4 +12,5 @@ exclude =
 per-file-ignores =
     # imported but unused
     __init__.py: F401
+    # testing don't need docs
     testing/*.py: D

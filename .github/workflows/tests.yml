@@ -31,8 +31,8 @@ jobs:
         run: poetry install
       - name: Test with tox
         run: poetry run tox -e
-      - name: "Upload coverage to Codecov"
-          uses: codecov/codecov-action@v2
-          with:
-            fail_ci_if_error: true
-            token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
