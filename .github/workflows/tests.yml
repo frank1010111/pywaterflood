@@ -26,11 +26,11 @@ jobs:
       - name: Install poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
-          version: 1.0.5
+          version: 1.1.12
       - name: Install dependencies
         run: poetry install
       - name: Test with tox
-        run: poetry run tox -e ${{ matrix.python-version }}
+        run: poetry run tox
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
