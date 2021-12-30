@@ -3,8 +3,8 @@
 [![Documentation Status](https://readthedocs.org/projects/pywaterflood/badge/?version=latest)](https://pywaterflood.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![codecov](https://codecov.io/gh/frank1010111/pywaterflood/branch/master/graph/badge.svg?token=3XRGLKO7T8)](https://codecov.io/gh/frank1010111/pywaterflood)
-![Python version](https://img.shields.io/badge/Python-3.7%2C%203.8%2C%203.9-blue)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/pywaterflood)
+[![Python version](https://img.shields.io/badge/Python-3.7%2C%203.8%2C%203.9-blue)](https://www.python.org/downloads/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pywaterflood)](https://pypi.org/project/pywaterflood/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/frank1010111/pywaterflood/master?labpath=docs%2Fexample.ipynb)
 
 
