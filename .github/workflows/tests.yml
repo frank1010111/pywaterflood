@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
-        os: [Ubuntu, MacOS, windows-latest]
+        os: [Ubuntu, MacOS, windows]
         python-version: [3.6, 3.7, 3.8, 3.9]
       fail-fast: false
     steps:
@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Test with tox
-        run: poetry run tox -e
+        run: poetry run tox -e ${{ matrix.python-version }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
