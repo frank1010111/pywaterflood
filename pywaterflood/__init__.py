@@ -1,11 +1,24 @@
-"pywaterflood"
-from importlib.metadata import version
+"""pywaterflood: A package for explaining and predicting waterflood performance.
 
-__version__ = version("pywaterflood")
-from .crm import CRM
-from .multiwellproductivity import (  # noqa: F401
+Provides
+--------
+CRM : a class for performing capacitance resistance modeling
+calc_gains_homogeneous : a function using the multiwell productivity index
+translate_location : a function for moving things from the real world
+  into dimensionless-land
+"""
+import sys
+from crm import CRM
+from multiwellproductivity import (  # noqa: F401
     calc_gains_homogeneous,
     translate_locations,
 )
+
+pyversion = sys.version_info
+if pyversion.major == 3 and pyversion.minor > 7:
+    from importlib.metadata import version
+
+    __version__ = version("pywaterflood")
+del sys, pyversion
 
 __all__ = ["CRM", "calc_gains_homogeneous", "translate_location"]

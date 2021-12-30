@@ -5,9 +5,11 @@ exclude =
     .git,
     __pycache__,
     docs/_build,
+    docs/conf.py,
     build,
     dist,
     .tox
 per-file-ignores =
     # imported but unused
     __init__.py: F401
+    testing/*.py: D

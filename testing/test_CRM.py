@@ -3,7 +3,7 @@ import pytest
 
 from itertools import product
 from pywaterflood import CRM
-from pywaterflood.crm import q_BHP
+from pywaterflood.crm import CrmCompensated, q_BHP
 
 primary = (True, False)
 tau_selection = ("per-pair", "per-producer")
@@ -75,15 +75,17 @@ class TestPredict:
 
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
-        prediction1 == pytest.approx(prediction2)
+        assert prediction1 == pytest.approx(prediction2, abs=1.0)
 
         if primary:
-            prediction1 == pytest.approx(
+            assert prediction1 == pytest.approx(
                 np.genfromtxt(data_dir + "prediction.csv", delimiter=",")
             )
         else:
-            prediction1 == pytest.approx(
-                np.genfromtxt(data_dir + "prediction_noprimary.csv", delimiter=",")
+            assert prediction1 == pytest.approx(
+                np.genfromtxt(data_dir + "prediction_noprimary.csv", delimiter=","),
+                abs=1.0,
+                rel=1e-3,
             )
 
     def test_predict_fails(
@@ -179,7 +181,7 @@ class TestFit:
                 time,
                 random=random,
                 initial_guess=x0,
-                options={"maxiter": 100},
+                options={"maxiter": 10},
             )
 
 
@@ -205,3 +207,10 @@ class TestExport:
         crm = trained_model(primary)
         with pytest.raises(TypeError):
             crm.to_pickle()
+
+
+@pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
+class TestBhp:
+    def test_init_bhp(self, primary, tau_selection, constraints):
+        crm = CrmCompensated(primary, tau_selection, constraints)
+        assert crm.primary == primary
