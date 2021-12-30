@@ -94,7 +94,7 @@ class TestPredict:
 
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
-        prediction1 == pytest.approx(prediction2)
+        assert prediction1 == pytest.approx(prediction2, abs=1.0)
 
         if primary:
             assert prediction1 == pytest.approx(
