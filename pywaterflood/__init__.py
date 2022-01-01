@@ -8,7 +8,7 @@ translate_location : a function for moving things from the real world
   into dimensionless-land
 """
 import sys
-from pywaterflood.crm import CRM
+from pywaterflood.crm import CRM, CrmCompensated
 from pywaterflood.multiwellproductivity import (  # noqa: F401
     calc_gains_homogeneous,
     translate_locations,
@@ -21,4 +21,4 @@ if pyversion.major == 3 and pyversion.minor > 7:
     __version__ = version("pywaterflood")
 del sys, pyversion
 
-__all__ = ["CRM", "calc_gains_homogeneous", "translate_location"]
+__all__ = ["CRM", "CrmCompensated", "calc_gains_homogeneous", "translate_locations"]
