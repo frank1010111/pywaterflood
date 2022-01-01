@@ -1,5 +1,5 @@
 import pickle
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -19,16 +19,16 @@ def q_primary(
     ----------
     production : ndarray
         Production, size: Number of time steps
-    time : ndarray 
+    time : ndarray
         Producing times to forecast, size: Number of time steps
     gain_producer : ndarray
         Arps q_i factor
-    tau_producer : ndarray 
+    tau_producer : ndarray
         Arps time constant
 
     Returns
     ----------
-    q_hat : ndarray 
+    q_hat : ndarray
         Calculated production, size: Number of time steps
     """
     time_decay = np.exp(-time / tau_producer)
@@ -98,7 +98,7 @@ def q_CRM_perproducer(
     time : ndarray
         Producing times to forecast, size: Number of time steps
     gains : ndarray
-        Connectivities between each injector and the producer, 
+        Connectivities between each injector and the producer
         size: Number of injectors
     tau : float
         Time constants all injectors and the producer
@@ -113,34 +113,40 @@ def q_CRM_perproducer(
 
 
 @njit
-def _pressure_diff(pressure: ndarray) -> ndarray:
-    """pressure differences between each producer each timestep"""
+def _pressure_diff(pressure_local: ndarray, pressure: ndarray) -> ndarray:
+    """pressure differences from local to each producer each timestep"""
     n_t, n_p = pressure.shape
-    pressure_diff = np.zeros((n_p, n_p, n_t))
-    for k in range(n_p):
-        for j in range(n_p):
-            for t in range(1, n_t):
-                pressure_diff[k, j, t] = pressure[t - 1, j] - pressure[t - 1, k]
+    pressure_diff = np.zeros((n_p, n_t))
+    for j in range(n_p):
+        for t in range(1, n_t):
+            pressure_diff[j, t] = pressure_local[t - 1] - pressure[t, j]
     return pressure_diff
 
 
-def q_BHP(pressure: ndarray, v_matrix: ndarray) -> ndarray:
-    """Calculates the production effect from bottom-hole pressure variation
+def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndarray:
+    r"""Calculates the production effect from bottom-hole pressure variation
+
+    This looks like
+    .. math::
+        q_{BHP,j}(t_i) = \sum_{k} v_{kj}\left[ p_j(t_{i-1}) - p_k(t_i) \right]
 
     Args
     ----
+    pressure_local : ndarray
+        pressure for the well in question, shape: n_time
     pressure : ndarray
-        bottomhole pressure, shape (n_time, n_producers)
+        bottomhole pressure, shape: n_time, n_producers
     v_matrix : ndarray
-        connectivity between different producers, shape (n_producers, n_producers)
+        connectivity between one producer and all producers, shape: n_producers
 
     Returns
     -------
     q : ndarray
         production from changing BHP
+        shape: n_time
     """
-    pressure_diff = _pressure_diff(pressure)
-    q = np.einsum("kj,kjt->jt", v_matrix, pressure_diff)
+    pressure_diff = _pressure_diff(pressure_local, pressure)
+    q = np.einsum("j,jt->t", v_matrix, pressure_diff)
     return q
 
 
@@ -153,7 +159,7 @@ def random_weights(
     ----
     n_i : int
     n_j : int
-    axis : int, default is 0 
+    axis : int, default is 0
     seed : int, default is None
 
     Returns
@@ -179,7 +185,7 @@ class CRM:
     ----------
     primary : bool
         Whether to model primary production (strongly recommended)
-    tau_selection : str 
+    tau_selection : str
         How many tau values to select
             - If 'per-pair', fit tau for each producer-injector pair
             - If 'per-producer', fit tau for each producer (CRMp model)
@@ -257,13 +263,12 @@ class CRM:
             relative time for each rate measurement, starting from 0,
             shape: (n_time)
         initial_guess : ndarray
-            initial guesses for gains, taus, primary production
-            contribution, of 
+            initial guesses for gains, taus, primary production contribution
             shape: (len(guess), n_producers)
         num_cores (int): number of cores to run fitting procedure on, defaults to 1
         random : bool
             whether to randomly initialize the gains
-        **kwargs: 
+        **kwargs:
             keyword arguments to pass to scipy.optimize fitting routine
 
         Returns
@@ -274,7 +279,6 @@ class CRM:
         self.production = production
         self.injection = injection
         self.time = time
-        
 
         if not initial_guess:
             initial_guess = self._get_initial_guess(random=random)
@@ -299,12 +303,11 @@ class CRM:
             )
             return result
 
-        production_perwell = [x for x in self.production.T]
         if num_cores == 1:
-            results = map(fit_well, production_perwell, initial_guess)
+            results = map(fit_well, self.production.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
-                delayed(fit_well)(p) for p, x0 in zip(production_perwell, initial_guess)
+                delayed(fit_well)(p) for p, x0 in zip(self.production.T, initial_guess)
             )
 
         opts_perwell = [self._split_opts(r["x"]) for r in results]
@@ -318,7 +321,7 @@ class CRM:
         self.tau_producer = np.array(tau_producer)
         return self
 
-    def predict(self, injection=None, time=None, connections={}):
+    def predict(self, injection=None, time=None, connections=None):
         """Predict production for a trained model.
 
         If the injection and time are not provided, this will use the training values
@@ -338,18 +341,16 @@ class CRM:
         q_hat :ndarray
             The predicted values, shape (n_time, n_producers)
         """
-        gains = connections["gains"] if "gains" in connections else self.gains
-        tau = connections["tau"] if "tau" in connections else self.tau
-        gains_producer = (
-            connections["gains_producer"]
-            if "gains_producer" in connections
-            else self.gains_producer
-        )
-        tau_producer = (
-            connections["tau_producer"]
-            if "tau_producer" in connections
-            else self.tau_producer
-        )
+        if connections is not None:
+            gains = connections.get("gains", self.gains)
+            tau = connections.get("tau", self.tau)
+            gains_producer = connections.get("gains_producer", self.gains_producer)
+            tau_producer = connections.get("tau_producer", self.tau_producer)
+        else:
+            gains = self.gains
+            tau = self.tau
+            gains_producer = self.gains_producer
+            tau_producer = self.tau_producer
         production = self.production
         n_producers = production.shape[1]
 
@@ -404,7 +405,7 @@ class CRM:
         production : ndarray
             The production rates observed, shape: (n_timesteps, n_producers)
         injection : ndarray
-            The injection rates to input to the system, 
+            The injection rates to input to the system,
             shape: (n_timesteps, n_injectors)
         time : ndarray
             The timesteps to predict
@@ -452,7 +453,7 @@ class CRM:
         with open(fname, "wb") as f:
             pickle.dump(self, f)
 
-    def _get_initial_guess(self, tau_selection: str = "", random=False):
+    def _get_initial_guess(self, tau_selection: Optional[str] = None, random=False):
         """Creates the initial guesses for the CRM model parameters
 
         :meta private:
@@ -461,20 +462,21 @@ class CRM:
         ----------
         tau_selection : str, one of 'per-pair' or 'per-producer'
             sets whether to use CRM (per-pair) or CRMp model
-
+        random : bool
+            whether initial gains are randomly (true) or proportionally assigned
         Returns
         ----------
         x0 : ndarray
-            Initial primary production gain, time constant and waterflood gains 
+            Initial primary production gain, time constant and waterflood gains
             and time constants, as one long 1-d array
         """
-        if tau_selection:
+        if tau_selection is not None:
             self.tau_selection = tau_selection
 
         n_inj = self.injection.shape[1]
         n_prod = self.production.shape[1]
         d_t = self.time[1] - self.time[0]
-        n_gains, n_tau, n_primary = self._opt_numbers()
+        n_gains, n_tau, n_primary = self._opt_numbers()[:3]
 
         axis = 1 if (self.constraints == "sum-to-one injector") else 0
         if random:
@@ -514,9 +516,7 @@ class CRM:
         """
         returns the number of gains, taus, and primary production parameters to fit
         """
-        n_inj = self.injection.shape[1]
-        # n_prod = self.production.shape[1]
-        n_gains = n_inj
+        n_gains = self.injection.shape[1]
         if self.tau_selection == "per-pair":
             n_tau = n_gains
         else:
@@ -534,13 +534,7 @@ class CRM:
             self.constraints = constraints
 
         n_inj = self.injection.shape[1]
-        if self.tau_selection == "per-pair":
-            n = n_inj * 2
-        else:
-            n = n_inj + 1
-
-        if self.primary:
-            n = n + 2
+        n = sum(self._opt_numbers())
 
         if self.constraints == "positive":
             bounds = ((0, np.inf),) * n
@@ -608,19 +602,195 @@ class CRM:
         return gains, tau, gain_producer, tau_producer
 
 
-def _validate_inputs(production: Optional[ndarray]=None, injection: Optional[ndarray]=None, time: Optional[ndarray]=None, pressure: Optional[ndarray]=None) -> None:
+class CrmCompensated(CRM):
+    def fit(
+        self,
+        production: ndarray,
+        pressure: ndarray,
+        injection: ndarray,
+        time: ndarray,
+        initial_guess: ndarray = None,
+        num_cores: int = 1,
+        random: bool = False,
+        **kwargs,
+    ):
+        """Build a CRM model from the production, pressure, and injection data
+
+        Args
+        ----------
+        production : ndarray
+            production rates for each time period,
+            shape: (n_time, n_producers)
+        pressure : ndarray
+            average pressure for each producer for each time period,
+            shape: (n_time, n_producers)
+        injection : ndarray
+            injection rates for each time period,
+            shape: (n_time, n_injectors)
+        time : ndarray
+            relative time for each rate measurement, starting from 0,
+            shape: (n_time)
+        initial_guess : ndarray
+            initial guesses for gains, taus, primary production
+            contribution
+            shape: (len(guess), n_producers)
+        num_cores (int): number of cores to run fitting procedure on, defaults to 1
+        random : bool
+            whether to randomly initialize the gains
+        **kwargs:
+            keyword arguments to pass to scipy.optimize fitting routine
+
+        Returns
+        ----------
+        self: trained model
+        """
+        _validate_inputs(production, injection, time, pressure)
+        self.production = production
+        self.injection = injection
+        self.time = time
+        self.pressure = pressure
+
+        if not initial_guess:
+            initial_guess = self._get_initial_guess(random=random)
+        bounds, constraints = self._get_bounds()
+
+        def fit_well(production, pressure_local, x0):
+            # residual is an L2 norm
+            def residual(x, production):
+                return sum(
+                    (
+                        production
+                        - self._calculate_qhat(x, production,
+                                               injection, time, pressure_local, pressure)
+                    )
+                    ** 2
+                )
+
+            result = optimize.minimize(
+                residual,
+                x0,
+                bounds=bounds,
+                constraints=constraints,
+                args=(production,),
+                **kwargs,
+            )
+            return result
+
+        if num_cores == 1:
+            results = map(
+                fit_well, self.production.T, pressure.T, initial_guess
+            )
+        else:
+            results = Parallel(n_jobs=num_cores)(
+                delayed(fit_well)(p) for p, x0 in
+                zip(self.production.T, pressure.T, initial_guess)
+            )
+
+        opts_perwell = [self._split_opts(r["x"]) for r in results]
+        gains_perwell, tau_perwell, gains_producer, tau_producer, gain_pressure = map(
+            list, zip(*opts_perwell)
+        )
+
+        self.gains = np.vstack(gains_perwell)
+        self.tau = np.vstack(tau_perwell)
+        self.gains_producer = np.array(gains_producer)
+        self.tau_producer = np.array(tau_producer)
+        self.gain_pressure = np.vstack(gain_pressure)
+        return self
+
+    def _calculate_qhat(  # TODO: start here
+        self,
+        x: np.ndarray,
+        production: np.ndarray,
+        injection: np.ndarray,
+        time: np.ndarray,
+        pressure_local: np.ndarray,
+        pressure: np.ndarray,
+    ):
+        ":meta private:"
+        gains, tau, gain_producer, tau_producer, gain_pressure = self._split_opts(x)
+        if self.primary:
+            q_hat = q_primary(production, time, gain_producer, tau_producer)
+        else:
+            q_hat = np.zeros(len(time))
+
+        q_hat += self.q_CRM(injection, time, gains, tau)
+        q_hat += q_bhp(pressure_local, pressure, gain_pressure)
+        return q_hat
+
+    def _opt_numbers(self) -> Tuple[int, int, int, int]:
+        n_gain, n_tau, n_primary = super()._opt_numbers()
+        return n_gain, n_tau, n_primary, self.production.shape[1]
+
+    def _split_opts(self, x: np.ndarray) -> Tuple[ndarray, ndarray, Any, Any, ndarray]:
+        n_gains, n_tau, n_primary = self._opt_numbers()[:3]
+        n_connectivity = n_gains + n_tau
+
+        gains = x[:n_gains]
+        tau = x[n_gains:n_connectivity]
+        if self.primary:
+            gain_producer = x[n_connectivity:][0]
+            tau_producer = x[n_connectivity:][1]
+        else:
+            gain_producer = 0
+            tau_producer = 1
+        gain_pressure = x[n_connectivity + n_primary :]
+
+        # boundary setting
+        if self.tau_selection == "per-pair":
+            tau[tau < 1e-10] = 1e-10
+        elif tau < 1e-10:
+            tau = 1e-10
+        if tau_producer < 1e-10:
+            tau_producer = 1e-10
+        return gains, tau, gain_producer, tau_producer, gain_pressure
+
+    def _get_initial_guess(self, tau_selection: Optional[str] = None, random=False):
+        """Creates the initial guesses for the CRM model parameters
+
+        :meta private:
+
+        Args
+        ----------
+        tau_selection : str, one of 'per-pair' or 'per-producer'
+            sets whether to use CRM (per-pair) or CRMp model
+
+        Returns
+        ----------
+        x0 : ndarray
+            Initial primary production gain, time constant and waterflood gains
+            and time constants, as one long 1-d array
+        """
+        guess = super()._get_initial_guess(tau_selection=tau_selection, random=random)
+        _, _, _, n_pressure = self._opt_numbers()
+        pressure_guess = np.ones(n_pressure)
+        guess = [np.concatenate([guess[i], pressure_guess]) for i in range(len(guess))]
+        return guess
+
+
+def _validate_inputs(
+    production: Optional[ndarray] = None,
+    injection: Optional[ndarray] = None,
+    time: Optional[ndarray] = None,
+    pressure: Optional[ndarray] = None,
+) -> None:
     "Validates shapes and values of inputs"
-    inputs = {"production": production, "injection": injection, "time": time, "pressure": pressure}
+    inputs = {
+        "production": production,
+        "injection": injection,
+        "time": time,
+        "pressure": pressure,
+    }
     inputs = {key: val for key, val in inputs.items() if val is not None}
     # Shapes
     test_prod_inj_timesteps = production is not None and injection is not None
-    if  test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
+    if test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
         raise ValueError(
             "production and injection do not have the same number of time steps"
         )
     if time is not None:
         for timeseries in inputs:
-            if (inputs[timeseries].shape[0] != time.shape[0]):
+            if inputs[timeseries].shape[0] != time.shape[0]:
                 raise ValueError(
                     f"{timeseries} and time do not have the same number of timesteps"
                 )
@@ -630,13 +800,15 @@ def _validate_inputs(production: Optional[ndarray]=None, injection: Optional[nda
                 "production and injection do not have the same number of timesteps"
             )
         if (pressure is not None) and (production.shape != pressure.shape):
-            raise ValueError(
-                "production and pressure are not of the same shape"
-            )
-    if (injection is not None) and (pressure is not None) and (injection.shape[0] != pressure.shape[0]):
+            raise ValueError("production and pressure are not of the same shape")
+    if (
+        (injection is not None)
+        and (pressure is not None)
+        and (injection.shape[0] != pressure.shape[0])
+    ):
         raise ValueError(
-                "injection and pressure do not have the same number of timesteps"
-            )
+            "injection and pressure do not have the same number of timesteps"
+        )
     # Values
     for timeseries in inputs:
         if np.any(np.isnan(inputs[timeseries])):
