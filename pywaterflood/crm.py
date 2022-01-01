@@ -1,3 +1,17 @@
+"""Analyze waterfloods with capacitance-resistance models. # noqa: D401,D400
+
+Classes
+-------
+CRM : standard capacitance resistance modeling
+CrmCompensated : including pressure
+
+Methods
+-------
+q_primary : primary production
+q_CRM_perpair : production due to injection (injector-producer pairs)
+q_CRM_perproducer : production due to injection (one producer, many injectors)
+q_bhp : production from changing bottomhole pressures of producers
+"""
 import pickle
 from typing import Optional, Tuple, Union, Any
 
@@ -13,7 +27,11 @@ from scipy import optimize
 def q_primary(
     production: ndarray, time: ndarray, gain_producer: ndarray, tau_producer: ndarray
 ) -> ndarray:
-    """Calculates primary production contribution using Arps equation with b=0
+    """Calculate primary production contribution.
+
+    Uses Arps equation with b=0
+    .. math::
+        q_{p}(t) = q_i e^{-bt}
 
     Args
     ----------
@@ -40,8 +58,10 @@ def q_primary(
 def q_CRM_perpair(
     injection: ndarray, time: ndarray, gains: ndarray, taus: ndarray
 ) -> ndarray:
-    """Calculates per injector-producer pair production for all injectors on one producer
-    using CRM model
+    """Calculate per injector-producer pair production.
+
+    Runs for influences of each injector on one producer, assuming
+    individual `gain`s and `tau`s for each pair
 
     Args
     ----------
@@ -88,8 +108,9 @@ def q_CRM_perpair(
 def q_CRM_perproducer(
     injection: ndarray, time: ndarray, gain: ndarray, tau: float
 ) -> ndarray:
-    """Calculates per injector-producer pair production for all injectors on one producer
-    using simplified CRMp model that assumes a single tau for each producer
+    """Calculate per injector-producer pair production (simplified tank).
+
+    Uses simplified CRMp model that assumes a single tau for each producer
 
     Args
     ----------
@@ -114,7 +135,7 @@ def q_CRM_perproducer(
 
 @njit
 def _pressure_diff(pressure_local: ndarray, pressure: ndarray) -> ndarray:
-    """pressure differences from local to each producer each timestep"""
+    """Pressure differences from local to each producer each timestep."""
     n_t, n_p = pressure.shape
     pressure_diff = np.zeros((n_p, n_t))
     for j in range(n_p):
@@ -124,7 +145,7 @@ def _pressure_diff(pressure_local: ndarray, pressure: ndarray) -> ndarray:
 
 
 def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndarray:
-    r"""Calculates the production effect from bottom-hole pressure variation
+    r"""Calculate the production effect from bottom-hole pressure variation.
 
     This looks like
     .. math::
@@ -153,7 +174,7 @@ def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndar
 def random_weights(
     n_i: int, n_j: int, axis: int = 0, seed: Optional[int] = None
 ) -> ndarray:
-    """Generates random weights for producer-injector gains
+    """Generate random weights for producer-injector gains.
 
     Args
     ----
@@ -174,7 +195,7 @@ def random_weights(
 
 
 class CRM:
-    """A Capacitance Resistance Model history matcher
+    """A Capacitance Resistance Model history matcher.
 
     CRM uses a physics-inspired mass balance approach to explain production for \
         waterfloods. It treants each injector-producer well pair as a system \
@@ -216,6 +237,7 @@ class CRM:
         tau_selection: str = "per-pair",
         constraints: str = "positive",
     ):
+        """Initialize CRM with appropriate settings."""
         if type(primary) != bool:
             raise TypeError("primary must be a boolean")
         self.primary = primary
@@ -249,7 +271,7 @@ class CRM:
         random: bool = False,
         **kwargs,
     ):
-        """Build a CRM model from the production and injection data (production, injection)
+        """Build a CRM model from the production and injection data.
 
         Args
         ----------
@@ -372,7 +394,17 @@ class CRM:
         return q_hat
 
     def set_rates(self, production=None, injection=None, time=None):
-        """Sets production and injection rates and time"""
+        """Set production and injection rates and time array.
+
+        Args
+        -----
+        production : ndarray
+            production rates with shape (n_time, n_producers)
+        injection : ndarray
+            injection rates with shape (n_time, n_injectors)
+        time : ndarray
+            timesteps with shape n_time
+        """
         _validate_inputs(production, injection, time)
         if production is not None:
             self.production = production
@@ -384,7 +416,21 @@ class CRM:
     def set_connections(
         self, gains=None, tau=None, gains_producer=None, tau_producer=None
     ):
-        """Sets waterflood properties"""
+        """Set waterflood properties.
+
+        Args
+        -----
+        gains : ndarray
+            connectivity between injector and producer
+            shape: n_gains, n_producers
+        tau : ndarray
+            time-constant for injection to be felt by production
+            shape: either n_producers or (n_gains, n_producers)
+        gains_producer : ndarray
+            gain on primary production, shape: n_producers
+        tau_producer : ndarray
+            Arps time constant for primary production, shape: n_producers
+        """
         if gains is not None:
             self.gains = gains
         if tau is not None:
@@ -421,7 +467,7 @@ class CRM:
         return production - q_hat
 
     def to_excel(self, fname: str):
-        """Write trained model to an Excel file
+        """Write trained model to an Excel file.
 
         Args
         ----
@@ -443,7 +489,7 @@ class CRM:
             ).to_excel(f, sheet_name="Primary production")
 
     def to_pickle(self, fname: str):
-        """Write trained model to a pickle file
+        """Write trained model to a pickle file.
 
         Args
         -----
@@ -454,7 +500,7 @@ class CRM:
             pickle.dump(self, f)
 
     def _get_initial_guess(self, tau_selection: Optional[str] = None, random=False):
-        """Creates the initial guesses for the CRM model parameters
+        """Create initial guesses for the CRM model parameters.
 
         :meta private:
 
@@ -513,9 +559,7 @@ class CRM:
         return x0
 
     def _opt_numbers(self) -> Tuple[int, int, int]:
-        """
-        returns the number of gains, taus, and primary production parameters to fit
-        """
+        """Return the number of gains, taus, and primary production parameters to fit."""
         n_gains = self.injection.shape[1]
         if self.tau_selection == "per-pair":
             n_tau = n_gains
@@ -528,8 +572,7 @@ class CRM:
         return n_gains, n_tau, n_primary
 
     def _get_bounds(self, constraints: str = "") -> Tuple[Tuple, Union[Tuple, dict]]:
-        """Create bounds for the model from initialized constraints
-        """
+        """Create bounds for the model from initialized constraints."""
         if constraints:
             self.constraints = constraints
 
@@ -567,7 +610,6 @@ class CRM:
         injection: np.ndarray,
         time: np.ndarray,
     ):
-        ":meta private:"
         gains, tau, gain_producer, tau_producer = self._split_opts(x)
         if self.primary:
             q_hat = q_primary(production, time, gain_producer, tau_producer)
@@ -603,6 +645,8 @@ class CRM:
 
 
 class CrmCompensated(CRM):
+    """Bottom-hole pressure compensated CRM."""
+
     def fit(
         self,
         production: ndarray,
@@ -614,7 +658,7 @@ class CrmCompensated(CRM):
         random: bool = False,
         **kwargs,
     ):
-        """Build a CRM model from the production, pressure, and injection data
+        """Fit a CRM model from the production, pressure, and injection data.
 
         Args
         ----------
@@ -660,8 +704,9 @@ class CrmCompensated(CRM):
                 return sum(
                     (
                         production
-                        - self._calculate_qhat(x, production,
-                                               injection, time, pressure_local, pressure)
+                        - self._calculate_qhat(
+                            x, production, injection, time, pressure_local, pressure
+                        )
                     )
                     ** 2
                 )
@@ -677,13 +722,11 @@ class CrmCompensated(CRM):
             return result
 
         if num_cores == 1:
-            results = map(
-                fit_well, self.production.T, pressure.T, initial_guess
-            )
+            results = map(fit_well, self.production.T, pressure.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
-                delayed(fit_well)(p) for p, x0 in
-                zip(self.production.T, pressure.T, initial_guess)
+                delayed(fit_well)(p)
+                for p, x0 in zip(self.production.T, pressure.T, initial_guess)
             )
 
         opts_perwell = [self._split_opts(r["x"]) for r in results]
@@ -707,7 +750,6 @@ class CrmCompensated(CRM):
         pressure_local: np.ndarray,
         pressure: np.ndarray,
     ):
-        ":meta private:"
         gains, tau, gain_producer, tau_producer, gain_pressure = self._split_opts(x)
         if self.primary:
             q_hat = q_primary(production, time, gain_producer, tau_producer)
@@ -746,7 +788,7 @@ class CrmCompensated(CRM):
         return gains, tau, gain_producer, tau_producer, gain_pressure
 
     def _get_initial_guess(self, tau_selection: Optional[str] = None, random=False):
-        """Creates the initial guesses for the CRM model parameters
+        """Make the initial guesses for the CRM model parameters.
 
         :meta private:
 
@@ -774,7 +816,19 @@ def _validate_inputs(
     time: Optional[ndarray] = None,
     pressure: Optional[ndarray] = None,
 ) -> None:
-    "Validates shapes and values of inputs"
+    """Validate shapes and values of inputs.
+
+    Args
+    ----
+    production : ndarray, optional
+    injection : ndarray, optional
+    time : ndarray, optional
+    pressure : ndarray, optional
+
+    Raises
+    ------
+    ValueError if timesteps don't match or production and pressure don't match
+    """
     inputs = {
         "production": production,
         "injection": injection,
@@ -786,7 +840,7 @@ def _validate_inputs(
     test_prod_inj_timesteps = production is not None and injection is not None
     if test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
         raise ValueError(
-            "production and injection do not have the same number of time steps"
+            "production and injection do not have the same number of timesteps"
         )
     if time is not None:
         for timeseries in inputs:

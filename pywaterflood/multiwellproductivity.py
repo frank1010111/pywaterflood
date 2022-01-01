@@ -1,3 +1,5 @@
+"""Interwell connectivity through geometric considerations."""
+
 import numpy as np
 import pandas as pd
 import scipy.linalg as sl
@@ -10,7 +12,7 @@ idx = pd.IndexSlice
 def calc_gains_homogeneous(
     locations: pd.DataFrame, x_e: float, y_e: float
 ) -> pd.DataFrame:
-    """Calculate gains from injectors to producers using multiwell productivity index
+    """Calculate gains from injectors to producers using multiwell productivity index.
 
     Args
     ----------
@@ -59,7 +61,7 @@ def calc_gains_homogeneous(
 def translate_locations(
     locations: pd.DataFrame, x_col: str, y_col: str, type_col: str
 ) -> pd.DataFrame:
-    """Translate locations  to prepare for building connectivity matrix
+    """Translate locations  to prepare for building connectivity matrix.
 
     Moves the lower left edge of the reservoir to (0, 0), and sets up the matrix columns
     to work with `calc_gains_homogeneous`
@@ -90,7 +92,7 @@ def translate_locations(
 def calc_influence_matrix(
     locations: pd.DataFrame, y_D: float, matrix_type: str = "conn", m_max: int = 300
 ) -> pd.DataFrame:
-    """Calculate influence matrix A
+    """Calculate influence matrix A.
 
     Args
     ----------
@@ -130,19 +132,19 @@ def calc_influence_matrix(
 def calc_A_ij(
     x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
 ) -> float:
-    """Calculate element in the influence matrix
+    r"""Calculate element in the influence matrix.
 
     .. math::
-        A_{ij} = 2 \\pi y_D (\\frac13 - \\frac{y_i}{y_D} +
-            \\frac{y_i^2 + y_j^2}{2 y_D^2})
-            + \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i)
-            \\cos(m \\pi \\tilde x_j)
+        A_{ij} = 2 \pi y_D (\frac13 - \frac{y_i}{y_D} +
+            \frac{y_i^2 + y_j^2}{2 y_D^2})
+            + \sum_{m=1}^\infty \frac{t_m}m \cos(m\pi \tilde x_i)
+            \cos(m \pi \tilde x_j)
     where
 
     .. math::
-        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right)
-        + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
-        {\\sinh\\left(m\\pi y_D \\right)}
+        t_m = \frac{\cosh\left(m\pi (y_D - |\tilde y_i - \tilde y_j|)\right)
+        + \cosh\left(m\pi (y_D - \tilde y_i - \tilde y_j\right)}
+        {\sinh\left(m\pi y_D \right)}
 
     Args
     ----
@@ -173,17 +175,17 @@ def calc_A_ij(
 def calc_summed_term(
     x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
 ) -> float:
-    """Calculate summed term using Valkó 2000 equations A4-7
+    r"""Calculate summed term using Valkó 2000 equations A4-7.
 
     .. math::
-        \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i)
-        \\cos(m \\pi \\tilde x_j)
+        \sum_{m=1}^\infty \frac{t_m}m \cos(m\pi \tilde x_i)
+        \cos(m \pi \tilde x_j)
     where
 
     .. math::
-        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right)
-        + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
-        {\\sinh\\left(m\\pi y_D \\right)}
+        t_m = \frac{\cosh\left(m\pi (y_D - |\tilde y_i - \tilde y_j|)\right)
+        + \cosh\left(m\pi (y_D - \tilde y_i - \tilde y_j\right)}
+        {\sinh\left(m\pi y_D \right)}
 
     Args
     ----
