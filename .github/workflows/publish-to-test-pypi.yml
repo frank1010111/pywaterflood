@@ -1,6 +1,6 @@
 name: Publish pywaterflood builds to PyPI and TestPyPI
 
-on: 
+on:
   push:
     branches:
       - master
