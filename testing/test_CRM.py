@@ -3,7 +3,7 @@ import pytest
 
 from itertools import product
 from pywaterflood import CRM
-from pywaterflood.crm import CrmCompensated, q_BHP
+from pywaterflood.crm import CrmCompensated, q_bhp
 
 primary = (True, False)
 tau_selection = ("per-pair", "per-producer")
@@ -39,14 +39,21 @@ def trained_model(reservoir_simulation_data):
     return _trained_model
 
 
-def test_BHP(reservoir_simulation_data):
-    "q_BHP functions"
-    production = reservoir_simulation_data[1]
-    _, nprod = production.shape
-    pressure_test = production.copy()
-    rng = np.random.default_rng(42)
-    v_matrix = rng.normal(0, 1, (nprod, nprod))
-    q = q_BHP(pressure_test, v_matrix)
+def test_q_bhp():
+    n_time = 5
+    n_prod = 2
+    pressure = np.ones((n_time, n_prod))
+    producer_gains = np.random.rand(n_prod)
+    q = q_bhp(pressure[:, 0], pressure, producer_gains)
+    assert np.allclose(q, 0), "no pressure change -> no prod"
+    pressure[-1] = 0
+    producer_gains = np.ones(n_prod)
+    q = q_bhp(pressure[:, 0], pressure, producer_gains)
+    assert np.allclose(q[-1], 2), "pressure drop -> increase production"
+    pressure[-1] = 2
+    producer_gains = np.ones(n_prod)
+    q = q_bhp(pressure[:, 0], pressure, producer_gains)
+    assert np.allclose(q[-1], -2), "pressure increase -> drop production"
     assert not np.isnan(q).any()
 
 
