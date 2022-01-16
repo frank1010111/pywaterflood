@@ -329,7 +329,8 @@ class CRM:
             results = map(fit_well, self.production.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
-                delayed(fit_well)(p) for p, x0 in zip(self.production.T, initial_guess)
+                delayed(fit_well)(p, x0)
+                for p, x0 in zip(self.production.T, initial_guess)
             )
 
         opts_perwell = [self._split_opts(r["x"]) for r in results]
@@ -725,8 +726,10 @@ class CrmCompensated(CRM):
             results = map(fit_well, self.production.T, pressure.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
-                delayed(fit_well)(p)
-                for p, x0 in zip(self.production.T, pressure.T, initial_guess)
+                delayed(fit_well)(prod, pressure, x0)
+                for prod, pressure, x0 in zip(
+                    self.production.T, pressure.T, initial_guess
+                )
             )
 
         opts_perwell = [self._split_opts(r["x"]) for r in results]
