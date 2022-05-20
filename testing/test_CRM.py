@@ -42,6 +42,17 @@ def trained_model(reservoir_simulation_data):
     return _trained_model
 
 
+def test_q_bhp_nonan(reservoir_simulation_data):
+    "q_BHP functions"
+    production = reservoir_simulation_data[1]
+    _, nprod = production.shape
+    pressure = production.copy()
+    rng = np.random.default_rng(42)
+    producer_gains = rng.normal(0, 1, nprod)
+    q = q_bhp(pressure[:, 0], pressure, producer_gains)
+    assert not np.isnan(q).any()
+
+
 def test_q_bhp():
     n_time = 5
     n_prod = 2
@@ -57,17 +68,6 @@ def test_q_bhp():
     producer_gains = np.ones(n_prod)
     q = q_bhp(pressure[:, 0], pressure, producer_gains)
     assert np.allclose(q[-1], -2), "pressure increase -> drop production"
-
-
-def test_q_bhp_nonan(reservoir_simulation_data):
-    "q_BHP functions"
-    production = reservoir_simulation_data[1]
-    _, nprod = production.shape
-    pressure_test = production.copy()
-    rng = np.random.default_rng(42)
-    v_matrix = rng.normal(0, 1, (nprod, nprod))
-    q = q_bhp(pressure_test, v_matrix)
-    assert not np.isnan(q).any()
 
 
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
@@ -179,14 +179,26 @@ class TestFit:
     ):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=1)
+        crm.fit(
+            production,
+            injection,
+            time,
+            num_cores=1,
+            options={"maxiter": 10},
+        )
 
     def test_fit_parallel(
         self, reservoir_simulation_data, primary, tau_selection, constraints
     ):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        crm.fit(production, injection, time, num_cores=4)
+        crm.fit(
+            production,
+            injection,
+            time,
+            num_cores=4,
+            options={"maxiter": 10},
+        )
 
     @pytest.mark.slow
     def test_fit_initial_guess(
