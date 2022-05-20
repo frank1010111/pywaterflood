@@ -76,3 +76,9 @@ source = ["pywaterflood"]
 
 [tool.coverage.report]
 show_missing = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+markers = [
+    "slow: mark test as slow."
+]
