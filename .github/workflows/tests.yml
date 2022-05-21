@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Test with tox
-        run: poetry run tox -e
+        run: poetry run tox
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v2
         with:
