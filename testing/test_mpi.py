@@ -1,12 +1,12 @@
-import pytest
-from itertools import product
+from __future__ import annotations
+
 import numpy as np
-from pywaterflood.multiwellproductivity import (
-    calc_gains_homogeneous,
-    translate_locations,
+import pandas as pd
+import pytest
+
+from pywaterflood.multiwellproductivity import (  # calc_gains_homogeneous,; translate_locations,
     calc_A_ij,
 )
-import pandas as pd
 
 raw_locs = pd.DataFrame()
 

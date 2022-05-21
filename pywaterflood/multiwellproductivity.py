@@ -1,23 +1,25 @@
+"""Interwell connectivity through geometric considerations."""
+
+from __future__ import annotations
+
 import numpy as np
-from numpy import ndarray
 import pandas as pd
 import scipy.linalg as sl
 from numba import njit
+from numpy import ndarray
 
 idx = pd.IndexSlice
 
 
-def calc_gains_homogeneous(
-    locations: pd.DataFrame, x_e: float, y_e: float
-) -> pd.DataFrame:
-    """Calculate gains from injectors to producers using multiwell productivity index
+def calc_gains_homogeneous(locations: pd.DataFrame, x_e: float, y_e: float) -> pd.DataFrame:
+    """Calculate gains from injectors to producers using multiwell productivity index.
 
     Args
     ----------
     locations : pd.DataFrame
         columns include:
-        `X` : x-location for well,
-        `Y` : y-location for well, 
+        `X` : x-location for well
+        `Y` : y-location for well
         `Type`: ("Producer" or "Injector")
     x_e : float
         scaling in x-direction (unit size)
@@ -36,30 +38,30 @@ def calc_gains_homogeneous(
 
     References
     ----------
-    Kaviani, D. and Valkó, P.P., 2010. Inferring interwell connectivity using multiwell \
-    productivity index (MPI). Journal of Petroleum Science and Engineering, 73(1-2), \
-    pp.48-58.
+    Kaviani, D. and Valkó, P.P., 2010. Inferring interwell connectivity using \
+    multiwell productivity index (MPI). Journal of Petroleum Science and Engineering, \
+    73(1-2), p.48-58.
     """
     locations = locations.copy()
     locations[["X", "Y"]] /= x_e
     y_D = y_e / x_e
     A_prod = calc_influence_matrix(locations, y_D, "prod").astype(float)
     A_conn = calc_influence_matrix(locations, y_D, "conn").astype(float)
-    A_prod_inv = np.linalg.inv(A_prod.values)
+    A_prod_inv = sl.inv(A_prod.values)
     term1 = A_prod_inv / np.sum(A_prod_inv)
     term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.values - 1
     term3 = A_prod_inv @ A_conn.values
     Lambda = term1 @ term2 - term3
-    connectivity_df = pd.DataFrame(
-        Lambda, index=A_prod.index, columns=A_conn.columns
-    ).rename_axis(index="Producers", columns="Injectors")
+    connectivity_df = pd.DataFrame(Lambda, index=A_prod.index, columns=A_conn.columns).rename_axis(
+        index="Producers", columns="Injectors"
+    )
     return connectivity_df
 
 
 def translate_locations(
     locations: pd.DataFrame, x_col: str, y_col: str, type_col: str
 ) -> pd.DataFrame:
-    """Translate locations  to prepare for building connectivity matrix
+    """Translate locations  to prepare for building connectivity matrix.
 
     Moves the lower left edge of the reservoir to (0, 0), and sets up the matrix columns
     to work with `calc_gains_homogeneous`
@@ -90,7 +92,7 @@ def translate_locations(
 def calc_influence_matrix(
     locations: pd.DataFrame, y_D: float, matrix_type: str = "conn", m_max: int = 300
 ) -> pd.DataFrame:
-    """Calculate influence matrix A
+    """Calculate influence matrix A.
 
     Args
     ----------
@@ -127,22 +129,20 @@ def calc_influence_matrix(
 
 
 @njit
-def calc_A_ij(
-    x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
-) -> float:
-    """Calculate element in the influence matrix
+def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray) -> float:
+    r"""Calculate element in the influence matrix.
 
-    .. math:: 
-        A_{ij} = 2 \\pi y_D (\\frac13 - \\frac{y_i}{y_D} + 
-            \\frac{y_i^2 + y_j^2}{2 y_D^2}) 
-            + \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i) 
-            \\cos(m \\pi \\tilde x_j)
+    .. math::
+        A_{ij} = 2 \pi y_D (\frac13 - \frac{y_i}{y_D} +
+            \frac{y_i^2 + y_j^2}{2 y_D^2})
+            + \sum_{m=1}^\infty \frac{t_m}m \cos(m\pi \tilde x_i)
+            \cos(m \pi \tilde x_j)
     where
 
     .. math::
-        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right) 
-        + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
-        {\\sinh\\left(m\\pi y_D \\right)}
+        t_m = \frac{\cosh\left(m\pi (y_D - |\tilde y_i - \tilde y_j|)\right)
+        + \cosh\left(m\pi (y_D - \tilde y_i - \tilde y_j\right)}
+        {\sinh\left(m\pi y_D \right)}
 
     Args
     ----
@@ -163,9 +163,7 @@ def calc_A_ij(
     -------
     A_ij : float
     """
-    first_term = (
-        2 * np.pi * y_D * (1 / 3.0 - y_i / y_D + (y_i ** 2 + y_j ** 2) / (2 * y_D ** 2))
-    )
+    first_term = 2 * np.pi * y_D * (1 / 3.0 - y_i / y_D + (y_i**2 + y_j**2) / (2 * y_D**2))
     return first_term + calc_summed_term(x_i, y_i, x_j, y_j, y_D, m)
 
 
@@ -173,18 +171,18 @@ def calc_A_ij(
 def calc_summed_term(
     x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
 ) -> float:
-    """Calculate summed term using Valkó 2000 equations A4-7
+    r"""Calculate summed term using Valkó 2000 equations A4-7.
 
     .. math::
-        \\sum_{m=1}^\\infty \\frac{t_m}m \\cos(m\\pi \\tilde x_i) 
-        \\cos(m \\pi \\tilde x_j)
+        \sum_{m=1}^\infty \frac{t_m}m \cos(m\pi \tilde x_i)
+        \cos(m \pi \tilde x_j)
     where
-    
+
     .. math::
-        t_m = \\frac{\\cosh\\left(m\\pi (y_D - |\\tilde y_i - \\tilde y_j|)\\right) 
-        + \\cosh\\left(m\\pi (y_D - \\tilde y_i - \\tilde y_j\\right)}
-        {\\sinh\\left(m\\pi y_D \\right)}
-    
+        t_m = \frac{\cosh\left(m\pi (y_D - |\tilde y_i - \tilde y_j|)\right)
+        + \cosh\left(m\pi (y_D - \tilde y_i - \tilde y_j\right)}
+        {\sinh\left(m\pi y_D \right)}
+
     Args
     ----
     x_i : float
@@ -205,16 +203,13 @@ def calc_summed_term(
     summed_term : float
     """
     tm = (
-        np.cosh(m * np.pi * (y_D - np.abs(y_i - y_j)))
-        + np.cosh(m * np.pi * (y_D - y_i - y_j))
+        np.cosh(m * np.pi * (y_D - np.abs(y_i - y_j))) + np.cosh(m * np.pi * (y_D - y_i - y_j))
     ) / np.sinh(m * np.pi * y_D)
 
     S1 = 2 * np.sum(tm / m * np.cos(m * np.pi * x_i) * np.cos(m * np.pi * x_j))
     tN = tm[-1]
     S2 = -tN / 2 * np.log(
         (1 - np.cos(np.pi * (x_i + x_j))) ** 2 + np.sin(np.pi * (x_i + x_j)) ** 2
-    ) - tN / 2 * np.log(
-        (1 - np.cos(np.pi * (x_i - x_j))) ** 2 + np.sin(np.pi * (x_i - x_j)) ** 2
-    )
+    ) - tN / 2 * np.log((1 - np.cos(np.pi * (x_i - x_j))) ** 2 + np.sin(np.pi * (x_i - x_j)) ** 2)
     S3 = -2 * tN * np.sum(1 / m * np.cos(m * np.pi * x_i) * np.cos(m * np.pi * x_j))
     return S1 + S2 + S3

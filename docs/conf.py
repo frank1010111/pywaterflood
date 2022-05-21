@@ -4,11 +4,12 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Project information -----------------------------------------------------
+from __future__ import annotations
 
-project = u"pywaterflood"
-copyright = u"2021, Frank Male"
-author = u"Frank Male"
+# -- Project information -----------------------------------------------------
+project = "pywaterflood"
+copyright = "2021, Frank Male"
+author = "Frank Male"
 
 # -- General configuration ---------------------------------------------------
 
@@ -40,5 +41,7 @@ napoleon_include_private_with_doc = False
 
 # Autodoc
 autodoc_default_options = {
-    "members": True, "undoc-members": True,     "private-members": False
+    "members": True,
+    "undoc-members": True,
+    "private-members": False,
 }
