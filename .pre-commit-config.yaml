@@ -63,3 +63,9 @@ repos:
     rev: v0.8.0.4
     hooks:
       - id: shellcheck
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.32.1
+    hooks:
+      - id: pyupgrade
+ci:
+  autoupdate_commit_msg: ":hook: chore: update pre-commit hooks"
