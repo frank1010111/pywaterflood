@@ -15,7 +15,7 @@ q_bhp : production from changing bottomhole pressures of producers
 from __future__ import annotations
 
 import pickle
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Tuple, Union
 
 import numpy as np
 import pandas as pd
