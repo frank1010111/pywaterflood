@@ -1,13 +1,13 @@
 channels:
-    - defaults
-    - conda-forge
+  - defaults
+  - conda-forge
 dependencies:
-    - python>=3.8
-    - pip
-    - numpy
-    - scipy
-    - pandas
-    - openpyxl
-    - pytest
-    - joblib
-    - numba
+  - python>=3.8
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - openpyxl
+  - pytest
+  - joblib
+  - numba

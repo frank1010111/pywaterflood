@@ -12,8 +12,10 @@ q_CRM_perpair : production due to injection (injector-producer pairs)
 q_CRM_perproducer : production due to injection (one producer, many injectors)
 q_bhp : production from changing bottomhole pressures of producers
 """
+from __future__ import annotations
+
 import pickle
-from typing import Optional, Tuple, Union, Any
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -55,9 +57,7 @@ def q_primary(
 
 
 @njit
-def q_CRM_perpair(
-    injection: ndarray, time: ndarray, gains: ndarray, taus: ndarray
-) -> ndarray:
+def q_CRM_perpair(injection: ndarray, time: ndarray, gains: ndarray, taus: ndarray) -> ndarray:
     """Calculate per injector-producer pair production.
 
     Runs for influences of each injector on one producer, assuming
@@ -87,9 +87,7 @@ def q_CRM_perpair(
 
     # Compute convolved injection rates
     for j in range(injection.shape[1]):
-        conv_injected[0, j] += (1 - np.exp((time[0] - time[1]) / taus[j])) * injection[
-            0, j
-        ]
+        conv_injected[0, j] += (1 - np.exp((time[0] - time[1]) / taus[j])) * injection[0, j]
         for k in range(1, n):
             for m in range(1, k + 1):
                 time_decay = (1 - np.exp((time[m - 1] - time[m]) / taus[j])) * np.exp(
@@ -105,9 +103,7 @@ def q_CRM_perpair(
 
 
 @njit
-def q_CRM_perproducer(
-    injection: ndarray, time: ndarray, gain: ndarray, tau: float
-) -> ndarray:
+def q_CRM_perproducer(injection: ndarray, time: ndarray, gain: ndarray, tau: float) -> ndarray:
     """Calculate per injector-producer pair production (simplified tank).
 
     Uses simplified CRMp model that assumes a single tau for each producer
@@ -171,9 +167,7 @@ def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndar
     return q
 
 
-def random_weights(
-    n_i: int, n_j: int, axis: int = 0, seed: Optional[int] = None
-) -> ndarray:
+def random_weights(n_i: int, n_j: int, axis: int = 0, seed: Optional[int] = None) -> ndarray:
     """Generate random weights for producer-injector gains.
 
     Args
@@ -311,8 +305,7 @@ class CRM:
             # residual is an L2 norm
             def residual(x, production):
                 return sum(
-                    (production - self._calculate_qhat(x, production, injection, time))
-                    ** 2
+                    (production - self._calculate_qhat(x, production, injection, time)) ** 2
                 )
 
             result = optimize.minimize(
@@ -329,14 +322,11 @@ class CRM:
             results = map(fit_well, self.production.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
-                delayed(fit_well)(p, x0)
-                for p, x0 in zip(self.production.T, initial_guess)
+                delayed(fit_well)(p, x0) for p, x0 in zip(self.production.T, initial_guess)
             )
 
         opts_perwell = [self._split_opts(r["x"]) for r in results]
-        gains_perwell, tau_perwell, gains_producer, tau_producer = map(
-            list, zip(*opts_perwell)
-        )
+        gains_perwell, tau_perwell, gains_producer, tau_producer = map(list, zip(*opts_perwell))
 
         self.gains = np.vstack(gains_perwell)
         self.tau = np.vstack(tau_perwell)
@@ -388,9 +378,7 @@ class CRM:
 
         q_hat = np.zeros((len(time), n_producers))
         for i in range(n_producers):
-            q_hat[:, i] += q_primary(
-                production[:, i], time, gains_producer[i], tau_producer[i]
-            )
+            q_hat[:, i] += q_primary(production[:, i], time, gains_producer[i], tau_producer[i])
             q_hat[:, i] += self.q_CRM(injection, time, gains[i, :], tau[i])
         return q_hat
 
@@ -414,9 +402,7 @@ class CRM:
         if time is not None:
             self.time = time
 
-    def set_connections(
-        self, gains=None, tau=None, gains_producer=None, tau_producer=None
-    ):
+    def set_connections(self, gains=None, tau=None, gains_producer=None, tau_producer=None):
         """Set waterflood properties.
 
         Args
@@ -553,10 +539,7 @@ class CRM:
                 for i in range(n_prod)
             ]
         else:
-            x0 = [
-                np.concatenate([gains_guess1[i, :], tau_guess1[i, :]])
-                for i in range(n_prod)
-            ]
+            x0 = [np.concatenate([gains_guess1[i, :], tau_guess1[i, :]]) for i in range(n_prod)]
         return x0
 
     def _opt_numbers(self) -> Tuple[int, int, int]:
@@ -727,9 +710,7 @@ class CrmCompensated(CRM):
         else:
             results = Parallel(n_jobs=num_cores)(
                 delayed(fit_well)(prod, pressure, x0)
-                for prod, pressure, x0 in zip(
-                    self.production.T, pressure.T, initial_guess
-                )
+                for prod, pressure, x0 in zip(self.production.T, pressure.T, initial_guess)
             )
 
         opts_perwell = [self._split_opts(r["x"]) for r in results]
@@ -842,20 +823,14 @@ def _validate_inputs(
     # Shapes
     test_prod_inj_timesteps = production is not None and injection is not None
     if test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
-        raise ValueError(
-            "production and injection do not have the same number of timesteps"
-        )
+        raise ValueError("production and injection do not have the same number of timesteps")
     if time is not None:
         for timeseries in inputs:
             if inputs[timeseries].shape[0] != time.shape[0]:
-                raise ValueError(
-                    f"{timeseries} and time do not have the same number of timesteps"
-                )
+                raise ValueError(f"{timeseries} and time do not have the same number of timesteps")
     if production is not None:
         if (injection is not None) and (production.shape[0] != injection.shape[0]):
-            raise ValueError(
-                "production and injection do not have the same number of timesteps"
-            )
+            raise ValueError("production and injection do not have the same number of timesteps")
         if (pressure is not None) and (production.shape != pressure.shape):
             raise ValueError("production and pressure are not of the same shape")
     if (
@@ -863,9 +838,7 @@ def _validate_inputs(
         and (pressure is not None)
         and (injection.shape[0] != pressure.shape[0])
     ):
-        raise ValueError(
-            "injection and pressure do not have the same number of timesteps"
-        )
+        raise ValueError("injection and pressure do not have the same number of timesteps")
     # Values
     for timeseries in inputs:
         if np.any(np.isnan(inputs[timeseries])):

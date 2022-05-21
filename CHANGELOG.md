@@ -5,7 +5,9 @@
 ## v0.1.1 (3/11/2021)
 
 - The great renaming to `pywaterflood`
+
 ### Features
+
 - multiwell productivity index added
 
 ## v0.1.0 (23/08/2021)

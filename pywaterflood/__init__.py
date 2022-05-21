@@ -7,7 +7,10 @@ calc_gains_homogeneous : a function using the multiwell productivity index
 translate_location : a function for moving things from the real world
   into dimensionless-land
 """
+from __future__ import annotations
+
 import sys
+
 from pywaterflood.crm import CRM, CrmCompensated
 from pywaterflood.multiwellproductivity import (  # noqa: F401
     calc_gains_homogeneous,
