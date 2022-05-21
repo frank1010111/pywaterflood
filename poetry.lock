@@ -1999,7 +1999,7 @@ docs = ["sphinx", "sphinx-autoapi", "sphinx-rtd-theme", "myst-nb"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "08b82aba74668f528b90bbefc6c006e3c089a9c56ff4482fdfdcb8b4ad01a08a"
+content-hash = "3e077de9d45bf498431a1b9d3d317b8f7fc9ac30acde706e5f17ce3e1352d90b"
 
 [metadata.files]
 alabaster = [

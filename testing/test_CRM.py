@@ -33,9 +33,7 @@ def trained_model(reservoir_simulation_data):
             crm.tau = np.genfromtxt(data_dir + "taus_per-pair.csv", delimiter=",")
         else:
             crm.tau = np.genfromtxt(data_dir + "taus.csv", delimiter=",")
-        crm.gains_producer = np.genfromtxt(
-            data_dir + "gain_producer.csv", delimiter=","
-        )
+        crm.gains_producer = np.genfromtxt(data_dir + "gain_producer.csv", delimiter=",")
         crm.tau_producer = np.genfromtxt(data_dir + "tau_producer.csv", delimiter=",")
         return crm
 
@@ -87,9 +85,7 @@ class TestInstantiate:
 @pytest.mark.parametrize("tau_selection", tau_selection)
 @pytest.mark.parametrize("primary", primary)
 class TestPredict:
-    def test_predict(
-        self, reservoir_simulation_data, trained_model, primary, tau_selection
-    ):
+    def test_predict(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary=primary, tau_selection=tau_selection)
 
@@ -110,9 +106,7 @@ class TestPredict:
             rel=1e-2,
         )
 
-    def test_predict_fails(
-        self, reservoir_simulation_data, trained_model, primary, tau_selection
-    ):
+    def test_predict_fails(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary, tau_selection)
         with pytest.raises(TypeError):
@@ -156,9 +150,7 @@ class TestFit:
         with pytest.raises(ValueError):
             crm.set_rates(time=time_bad)
 
-    def test_fit_fails(
-        self, reservoir_simulation_data, primary, tau_selection, constraints
-    ):
+    def test_fit_fails(self, reservoir_simulation_data, primary, tau_selection, constraints):
         crm = CRM(primary, tau_selection, constraints)
         injection, production, time = reservoir_simulation_data
 
@@ -174,9 +166,7 @@ class TestFit:
             crm.fit(production, injection, time[:-1])
 
     @pytest.mark.skip
-    def test_fit_serial(
-        self, reservoir_simulation_data, primary, tau_selection, constraints
-    ):
+    def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.fit(
@@ -187,9 +177,7 @@ class TestFit:
             options={"maxiter": 3},
         )
 
-    def test_fit_parallel(
-        self, reservoir_simulation_data, primary, tau_selection, constraints
-    ):
+    def test_fit_parallel(self, reservoir_simulation_data, primary, tau_selection, constraints):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.fit(

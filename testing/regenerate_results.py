@@ -61,7 +61,5 @@ if __name__ == "__main__":
                 primary_str = "primary"
             else:
                 primary_str = "noprimary"
-            np.savetxt(
-                f"{data_dir}prediction_{primary_str}_{t}.csv", prediction, delimiter=","
-            )
+            np.savetxt(f"{data_dir}prediction_{primary_str}_{t}.csv", prediction, delimiter=",")
     print("Finished")
