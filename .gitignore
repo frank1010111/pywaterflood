@@ -144,3 +144,6 @@ dmypy.json
 # data files
 *.xlsx
 *.pkl
+
+# vs-code
+.vscode
