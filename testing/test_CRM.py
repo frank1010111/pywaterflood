@@ -98,17 +98,17 @@ class TestPredict:
         assert prediction1 == pytest.approx(prediction2, abs=1.0)
 
         if primary:
-            assert prediction1 == pytest.approx(
-                np.genfromtxt(data_dir + "prediction.csv", delimiter=","),
-                abs=5.0,
-                rel=1e-2,
-            )
+            primary_str = "primary"
         else:
-            assert prediction1 == pytest.approx(
-                np.genfromtxt(data_dir + "prediction_noprimary.csv", delimiter=","),
-                abs=5.0,
-                rel=1e-2,
-            )
+            primary_str = "noprimary"
+
+        assert prediction1 == pytest.approx(
+            np.genfromtxt(
+                f"{data_dir}prediction_{primary_str}_{tau_selection}.csv", delimiter=","
+            ),
+            abs=5.0,
+            rel=1e-2,
+        )
 
     def test_predict_fails(
         self, reservoir_simulation_data, trained_model, primary, tau_selection
@@ -184,7 +184,7 @@ class TestFit:
             injection,
             time,
             num_cores=1,
-            options={"maxiter": 10},
+            options={"maxiter": 3},
         )
 
     def test_fit_parallel(
@@ -197,7 +197,7 @@ class TestFit:
             injection,
             time,
             num_cores=4,
-            options={"maxiter": 10},
+            options={"maxiter": 3},
         )
 
     @pytest.mark.slow
@@ -215,7 +215,7 @@ class TestFit:
                 time,
                 random=random,
                 initial_guess=x0,
-                options={"maxiter": 10},
+                options={"maxiter": 3},
             )
 
 
