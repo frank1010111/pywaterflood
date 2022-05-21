@@ -167,7 +167,7 @@ def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndar
     return q
 
 
-def random_weights(n_i: int, n_j: int, axis: int = 0, seed: Optional[int] = None) -> ndarray:
+def random_weights(n_i: int, n_j: int, axis: int = 0, seed: int | None = None) -> ndarray:
     """Generate random weights for producer-injector gains.
 
     Args
@@ -192,9 +192,9 @@ class CRM:
     """A Capacitance Resistance Model history matcher.
 
     CRM uses a physics-inspired mass balance approach to explain production for \
-        waterfloods. It treants each injector-producer well pair as a system \
+        waterfloods. It treats each injector-producer well pair as a system \
         with mass input, output, and pressure related to the mass balance. \
-        Several versions exist.
+        Several versions exist. Select them from the arguments.
 
     Args
     ----------
@@ -486,7 +486,7 @@ class CRM:
         with open(fname, "wb") as f:
             pickle.dump(self, f)
 
-    def _get_initial_guess(self, tau_selection: Optional[str] = None, random=False):
+    def _get_initial_guess(self, tau_selection: str | None = None, random=False):
         """Create initial guesses for the CRM model parameters.
 
         :meta private:
@@ -542,7 +542,7 @@ class CRM:
             x0 = [np.concatenate([gains_guess1[i, :], tau_guess1[i, :]]) for i in range(n_prod)]
         return x0
 
-    def _opt_numbers(self) -> Tuple[int, int, int]:
+    def _opt_numbers(self) -> tuple[int, int, int]:
         """Return the number of gains, taus, and primary production parameters to fit."""
         n_gains = self.injection.shape[1]
         if self.tau_selection == "per-pair":
@@ -555,7 +555,7 @@ class CRM:
             n_primary = 0
         return n_gains, n_tau, n_primary
 
-    def _get_bounds(self, constraints: str = "") -> Tuple[Tuple, Union[Tuple, dict]]:
+    def _get_bounds(self, constraints: str = "") -> tuple[tuple, tuple | dict]:
         """Create bounds for the model from initialized constraints."""
         if constraints:
             self.constraints = constraints
@@ -744,11 +744,11 @@ class CrmCompensated(CRM):
         q_hat += q_bhp(pressure_local, pressure, gain_pressure)
         return q_hat
 
-    def _opt_numbers(self) -> Tuple[int, int, int, int]:
+    def _opt_numbers(self) -> tuple[int, int, int, int]:
         n_gain, n_tau, n_primary = super()._opt_numbers()
         return n_gain, n_tau, n_primary, self.production.shape[1]
 
-    def _split_opts(self, x: np.ndarray) -> Tuple[ndarray, ndarray, Any, Any, ndarray]:
+    def _split_opts(self, x: np.ndarray) -> tuple[ndarray, ndarray, Any, Any, ndarray]:
         n_gains, n_tau, n_primary = self._opt_numbers()[:3]
         n_connectivity = n_gains + n_tau
 
@@ -771,7 +771,7 @@ class CrmCompensated(CRM):
             tau_producer = 1e-10
         return gains, tau, gain_producer, tau_producer, gain_pressure
 
-    def _get_initial_guess(self, tau_selection: Optional[str] = None, random=False):
+    def _get_initial_guess(self, tau_selection: str | None = None, random=False):
         """Make the initial guesses for the CRM model parameters.
 
         :meta private:
@@ -795,10 +795,10 @@ class CrmCompensated(CRM):
 
 
 def _validate_inputs(
-    production: Optional[ndarray] = None,
-    injection: Optional[ndarray] = None,
-    time: Optional[ndarray] = None,
-    pressure: Optional[ndarray] = None,
+    production: ndarray | None = None,
+    injection: ndarray | None = None,
+    time: ndarray | None = None,
+    pressure: ndarray | None = None,
 ) -> None:
     """Validate shapes and values of inputs.
 
