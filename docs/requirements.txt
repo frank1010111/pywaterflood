@@ -3,7 +3,7 @@ myst-nb==0.13.1
 numba==0.53.1
 numpy==1.22.1
 pandas==1.2.4
-pywaterflood
+pywaterflood>=0.2.0
 scipy==1.6.2
 sphinx==4.2.0
 sphinx-autoapi==1.8.4
