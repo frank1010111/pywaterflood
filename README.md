@@ -6,10 +6,8 @@
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![codecov](https://codecov.io/gh/frank1010111/pywaterflood/branch/master/graph/badge.svg?token=3XRGLKO7T8)](https://codecov.io/gh/frank1010111/pywaterflood)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Python version](https://img.shields.io/badge/Python-3.7%2C%203.8%2C%203.9-blue)](https://www.python.org/downloads/)
+[![Python version](https://img.shields.io/badge/Python-3.7%2C%203.8%2C%203.9%203.10-blue)](https://www.python.org/downloads/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/pywaterflood)](https://pypi.org/project/pywaterflood/)
-
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/frank1010111/pywaterflood/master?labpath=docs%2Fexample.ipynb)
 
 `pywaterflood` provides tools for capacitance resistance modeling, a
 physics-inspired model for estimating waterflood performance. It estimates the
