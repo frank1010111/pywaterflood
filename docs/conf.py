@@ -23,6 +23,14 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 autoapi_dirs = ["../pywaterflood"]
+autoapi_options = [
+    "members",
+    "inherited-members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -35,13 +43,3 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".ipynb_checkpoints"]
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
-
-# Option for Napoleon
-napoleon_include_private_with_doc = False
-
-# Autodoc
-autodoc_default_options = {
-    "members": True,
-    "undoc-members": True,
-    "private-members": False,
-}
