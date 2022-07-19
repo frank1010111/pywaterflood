@@ -68,15 +68,16 @@ devwork = [
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.coverage.paths]
-source = ["pywaterflood", "*/site-packages"]
-
 [tool.coverage.run]
 branch = true
 source = ["pywaterflood"]
+timid = true
 
 [tool.coverage.report]
 show_missing = true
+exclude_lines = [
+    "pyversion"
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
