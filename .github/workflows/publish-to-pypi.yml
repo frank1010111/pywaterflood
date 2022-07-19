@@ -9,27 +9,27 @@ on:
       - published
 
 jobs:
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15]
+  # build_wheels:
+  #   name: Build wheels on ${{ matrix.os }}
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-20.04, windows-2019, macos-10.15]
 
-    steps:
-      - uses: actions/checkout@v3
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.8.1
-        with:
-          package-dir: .
-          output-dir: wheelhouse
-        env:
-          CIBW_SKIP: "cp36-* cp311* pp*"
+  #     - name: Build wheels
+  #       uses: pypa/cibuildwheel@v2.8.1
+  #       with:
+  #         package-dir: .
+  #         output-dir: wheelhouse
+  #       env:
+  #         CIBW_SKIP: "cp36-* cp311* pp*"
 
-      - uses: actions/upload-artifact@v3
-        with:
-          path: ./wheelhouse/*.whl
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         path: ./wheelhouse/*.whl
 
   build_sdist:
     name: Build source distribution
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Build sdist
-        run: pipx run build --sdist
+        run: pipx run build --sdist --wheel
 
       - uses: actions/upload-artifact@v3
         with:
