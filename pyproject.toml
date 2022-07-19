@@ -76,7 +76,9 @@ timid = true
 [tool.coverage.report]
 show_missing = true
 exclude_lines = [
-    "pyversion"
+    "pyversion",
+    "@jit",
+    "@njit",
 ]
 
 [tool.pytest.ini_options]
