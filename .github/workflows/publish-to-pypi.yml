@@ -45,6 +45,23 @@ jobs:
         with:
           path: dist/*.tar.gz
 
+  upload_testpypi:
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          # unpacks default artifact into dist/
+          # if `name: artifact` is omitted, the action will create extra parent dir
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
