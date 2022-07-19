@@ -32,7 +32,7 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
 
-  build_sdist:
+  build:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
@@ -43,10 +43,10 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          path: dist/*.tar.gz
+          path: dist/
 
   upload_testpypi:
-    needs: [build_wheels, build_sdist]
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
@@ -63,7 +63,7 @@ jobs:
           repository_url: https://test.pypi.org/legacy/
 
   upload_pypi:
-    needs: [build_wheels, build_sdist]
+    needs: build
     runs-on: ubuntu-latest
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
