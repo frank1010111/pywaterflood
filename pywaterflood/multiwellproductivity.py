@@ -110,7 +110,8 @@ def calc_influence_matrix(
     influence_matrix : pd.DataFrame
         a matrix with the influences between wells
     """
-    assert matrix_type in ["conn", "prod"]
+    if matrix_type not in ["conn", "prod"]:
+        raise ValueError("matrix_type must be either `conn` or `prod`")
     XA = locations[locations.Type == "Producer"]
     if matrix_type == "prod":
         XB = XA.copy()
@@ -124,7 +125,7 @@ def calc_influence_matrix(
         x_i, y_i = XA.loc[i, ["X", "Y"]]
         x_j, y_j = XB.loc[j, ["X", "Y"]] + 1e-6
         influence_matrix.loc[idx[i, j], "A"] = calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
-    return influence_matrix["A"].unstack()
+    return influence_matrix["A"].astype(float).unstack()
 
 
 def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray) -> float:

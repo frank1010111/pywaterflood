@@ -57,15 +57,16 @@ bindings = "pyo3"
 # Control the platform tag on linux
 compatibility = "linux"
 
-[tool.coverage.paths]
-source = ["pywaterflood", "*/site-packages"]
-
 [tool.coverage.run]
 branch = true
 source = ["pywaterflood"]
+timid = true
 
 [tool.coverage.report]
 show_missing = true
+exclude_lines = [
+    "pyversion"
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

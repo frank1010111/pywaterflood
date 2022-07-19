@@ -5,8 +5,9 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pywaterflood import CRM, CrmCompensated
 from pywaterflood.crm import (
+    CRM,
+    CrmCompensated,
     _pressure_diff,
     q_bhp,
     q_CRM_perpair,
