@@ -319,7 +319,7 @@ class CRM:
             return result
 
         if num_cores == 1:
-            results = map(fit_well, self.production.T, initial_guess)
+            results = map(fit_well, self.production.T, initial_guess)  # type: ignore
         else:
             results = Parallel(n_jobs=num_cores)(
                 delayed(fit_well)(p, x0) for p, x0 in zip(self.production.T, initial_guess)
@@ -328,8 +328,8 @@ class CRM:
         opts_perwell = [self._split_opts(r["x"]) for r in results]
         gains_perwell, tau_perwell, gains_producer, tau_producer = map(list, zip(*opts_perwell))
 
-        self.gains: NDArray = np.vstack(gains_perwell)
-        self.tau: NDArray = np.vstack(tau_perwell)
+        self.gains: NDArray = np.vstack(gains_perwell)  # type: ignore
+        self.tau: NDArray = np.vstack(tau_perwell)  # type: ignore
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
         return self
@@ -703,7 +703,7 @@ class CrmCompensated(CRM):
             return result
 
         if num_cores == 1:
-            results = map(fit_well, self.production.T, pressure.T, initial_guess)
+            results = map(fit_well, self.production.T, pressure.T, initial_guess)  # type: ignore
         else:
             results = Parallel(n_jobs=num_cores)(
                 delayed(fit_well)(prod, pressure, x0)
@@ -715,11 +715,11 @@ class CrmCompensated(CRM):
             list, zip(*opts_perwell)
         )
 
-        self.gains = np.vstack(gains_perwell)
-        self.tau = np.vstack(tau_perwell)
+        self.gains: NDArray = np.vstack(gains_perwell)  # type: ignore
+        self.tau: NDArray = np.vstack(tau_perwell)  # type: ignore
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
-        self.gain_pressure = np.vstack(gain_pressure)
+        self.gain_pressure: NDArray = np.vstack(gain_pressure)  # type: ignore
         return self
 
     def _calculate_qhat(  # TODO: start here
