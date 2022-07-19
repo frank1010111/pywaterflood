@@ -5,8 +5,15 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pywaterflood import CRM
-from pywaterflood.crm import CrmCompensated, q_bhp
+from pywaterflood import CRM, CrmCompensated
+from pywaterflood.crm import (
+    _pressure_diff,
+    q_bhp,
+    q_CRM_perpair,
+    q_CRM_perproducer,
+    q_primary,
+    random_weights,
+)
 
 primary = (True, False)
 tau_selection = ("per-pair", "per-producer")
@@ -40,18 +47,73 @@ def trained_model(reservoir_simulation_data):
     return _trained_model
 
 
+def test_q_primary(reservoir_simulation_data):
+    "primary production."
+    _, production, time = reservoir_simulation_data
+    _, nprod = production.shape
+    rng = np.random.default_rng(14_210)
+    gain_producer = rng.uniform(0, 1, nprod)
+    tau_producer = rng.uniform(1, 100, nprod)
+    q = np.empty_like(production)
+    for i in range(nprod):
+        q[:, i] = q_primary(production[i], time, gain_producer[i], tau_producer[i])
+    assert not np.isnan(q).flatten().any(), "No NaNs"
+    pxg = production[0] * gain_producer
+    summed_q = q.sum(0)
+    assert np.allclose(pxg.argsort(), summed_q.argsort()), "Higher gains -> higher predictions"
+
+
+def test_q_perpair(reservoir_simulation_data):
+    "Secondary production."
+    injection, production, time = reservoir_simulation_data
+    _, nprod = production.shape
+    _, ninj = injection.shape
+    gains = random_weights(nprod, ninj, seed=42)
+    rng = np.random.default_rng(42)
+    taus = rng.uniform(1, 40, gains.shape)
+    q_1 = np.empty_like(production)
+    q_2 = np.empty_like(production)
+    for i in range(nprod):
+        q_1[:, i] = q_CRM_perpair(injection, time, gains[i], taus[i])
+        q_2[:, i] = q_CRM_perpair(injection, time, 0.5 * gains[i], taus[i])
+    assert not np.isnan(q_1).flatten().any(), "No NaNs"
+    assert not np.isnan(q_1).flatten().any(), "No NaNs"
+    assert np.allclose(q_1, 2.0 * q_2), "Double gains -> double prod"
+
+
+def test_q_perproducer(reservoir_simulation_data):
+    "Secondary production."
+    injection, production, time = reservoir_simulation_data
+    _, nprod = production.shape
+    _, ninj = injection.shape
+    gains = random_weights(nprod, ninj, seed=42)
+    rng = np.random.default_rng(42)
+    taus = rng.uniform(1, 40, nprod)
+    q_1 = np.empty_like(production)
+    q_2 = np.empty_like(production)
+    for i in range(nprod):
+        q_1[:, i] = q_CRM_perproducer(injection, time, gains[i], taus[i])
+        q_2[:, i] = q_CRM_perproducer(injection, time, 0.5 * gains[i], taus[i])
+    assert not np.isnan(q_1).flatten().any(), "No NaNs"
+    assert not np.isnan(q_1).flatten().any(), "No NaNs"
+    assert np.allclose(q_1, 2.0 * q_2), "Double gains -> double prod"
+
+
 def test_q_bhp_nonan(reservoir_simulation_data):
     "q_BHP functions"
     production = reservoir_simulation_data[1]
     _, nprod = production.shape
     pressure = production.copy()
     rng = np.random.default_rng(42)
+    pressure_diff = _pressure_diff(pressure[:, 0], pressure)
+    assert not np.isnan(pressure_diff).flatten().any(), "No NaNs among pressure_diff"
     producer_gains = rng.normal(0, 1, nprod)
     q = q_bhp(pressure[:, 0], pressure, producer_gains)
-    assert not np.isnan(q).any()
+    assert not np.isnan(q).any(), "No NaNs among results"
 
 
 def test_q_bhp():
+    """Test bottomhole pressure influencing production."""
     n_time = 5
     n_prod = 2
     pressure = np.ones((n_time, n_prod))
@@ -165,7 +227,7 @@ class TestFit:
         with pytest.raises(ValueError):
             crm.fit(production, injection, time[:-1])
 
-    @pytest.mark.skip
+    @pytest.mark.slow
     def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
