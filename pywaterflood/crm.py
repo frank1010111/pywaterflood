@@ -21,14 +21,14 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numba import njit
-from numpy import ndarray
+from numpy.typing import NDArray
 from scipy import optimize
 
 
 @njit
 def q_primary(
-    production: ndarray, time: ndarray, gain_producer: ndarray, tau_producer: ndarray
-) -> ndarray:
+    production: NDArray, time: NDArray, gain_producer: float, tau_producer: float
+) -> NDArray:
     """Calculate primary production contribution.
 
     Uses Arps equation with b=0
@@ -37,18 +37,18 @@ def q_primary(
 
     Args
     ----------
-    production : ndarray
+    production : NDArray
         Production, size: Number of time steps
-    time : ndarray
+    time : NDArray
         Producing times to forecast, size: Number of time steps
-    gain_producer : ndarray
+    gain_producer : float
         Arps q_i factor
-    tau_producer : ndarray
+    tau_producer : float
         Arps time constant
 
     Returns
     ----------
-    q_hat : ndarray
+    q_hat : NDArray
         Calculated production, size: Number of time steps
     """
     time_decay = np.exp(-time / tau_producer)
@@ -57,7 +57,7 @@ def q_primary(
 
 
 @njit
-def q_CRM_perpair(injection: ndarray, time: ndarray, gains: ndarray, taus: ndarray) -> ndarray:
+def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArray) -> NDArray:
     """Calculate per injector-producer pair production.
 
     Runs for influences of each injector on one producer, assuming
@@ -65,20 +65,20 @@ def q_CRM_perpair(injection: ndarray, time: ndarray, gains: ndarray, taus: ndarr
 
     Args
     ----------
-    injection : ndarray
+    injection : NDArray
         Injected fluid, size: Number of time steps
-    time : ndarray
+    time : NDArray
         Producing times to forecast, size: Number of time steps
-    gains : ndarray
+    gains : NDArray
         Connectivities between each injector and the producer,
         size: Number of injectors
-    taus : ndarray
+    taus : NDArray
         Time constants between each injector and the producer,
         size: Number of injectors
 
     Returns
     ----------
-    q_hat : ndarray
+    q_hat : NDArray
         Calculated production, size: Number of time steps
     """
     n = len(time)
@@ -103,18 +103,18 @@ def q_CRM_perpair(injection: ndarray, time: ndarray, gains: ndarray, taus: ndarr
 
 
 @njit
-def q_CRM_perproducer(injection: ndarray, time: ndarray, gain: ndarray, tau: float) -> ndarray:
+def q_CRM_perproducer(injection: NDArray, time: NDArray, gain: NDArray, tau: float) -> NDArray:
     """Calculate per injector-producer pair production (simplified tank).
 
     Uses simplified CRMp model that assumes a single tau for each producer
 
     Args
     ----------
-    injection : ndarray
+    injection : NDArray
         injected fluid in reservoir volumes, size: Number of time steps
-    time : ndarray
+    time : NDArray
         Producing times to forecast, size: Number of time steps
-    gains : ndarray
+    gains : NDArray
         Connectivities between each injector and the producer
         size: Number of injectors
     tau : float
@@ -122,15 +122,15 @@ def q_CRM_perproducer(injection: ndarray, time: ndarray, gain: ndarray, tau: flo
 
     Returns
     ----------
-    q_hat : ndarray
+    q_hat : NDArray
         Calculated production, size: Number of time steps
     """
-    tau2 = tau * np.ones(injection.shape[1])
+    tau2 = np.full(injection.shape[1], tau)
     return q_CRM_perpair(injection, time, gain, tau2)
 
 
 @njit
-def _pressure_diff(pressure_local: ndarray, pressure: ndarray) -> ndarray:
+def _pressure_diff(pressure_local: NDArray, pressure: NDArray) -> NDArray:
     """Pressure differences from local to each producer each timestep."""
     n_t, n_p = pressure.shape
     pressure_diff = np.zeros((n_p, n_t))
@@ -140,7 +140,7 @@ def _pressure_diff(pressure_local: ndarray, pressure: ndarray) -> ndarray:
     return pressure_diff
 
 
-def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndarray:
+def q_bhp(pressure_local: NDArray, pressure: NDArray, v_matrix: NDArray) -> NDArray:
     r"""Calculate the production effect from bottom-hole pressure variation.
 
     This looks like
@@ -149,16 +149,16 @@ def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndar
 
     Args
     ----
-    pressure_local : ndarray
+    pressure_local : NDArray
         pressure for the well in question, shape: n_time
-    pressure : ndarray
+    pressure : NDArray
         bottomhole pressure, shape: n_time, n_producers
-    v_matrix : ndarray
+    v_matrix : NDArray
         connectivity between one producer and all producers, shape: n_producers
 
     Returns
     -------
-    q : ndarray
+    q : NDArray
         production from changing BHP
         shape: n_time
     """
@@ -167,7 +167,7 @@ def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndar
     return q
 
 
-def random_weights(n_i: int, n_j: int, axis: int = 0, seed: int | None = None) -> ndarray:
+def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = None) -> NDArray:
     """Generate random weights for producer-injector gains.
 
     Args
@@ -179,11 +179,11 @@ def random_weights(n_i: int, n_j: int, axis: int = 0, seed: int | None = None) -
 
     Returns
     -------
-    gains_guess: ndarray
+    gains_guess: NDArray
     """
     rng = np.random.default_rng(seed)
-    limit = 10 * (n_i if axis == 0 else n_j)
-    vec = rng.integers(0, limit, (n_i, n_j))
+    limit = 10 * (n_prod if axis == 0 else n_inj)
+    vec = rng.integers(0, limit, (n_prod, n_inj))
     axis_sum = vec.sum(axis, keepdims=True)
     return vec / axis_sum
 
@@ -257,10 +257,10 @@ class CRM:
 
     def fit(
         self,
-        production: ndarray,
-        injection: ndarray,
-        time: ndarray,
-        initial_guess: ndarray = None,
+        production: NDArray,
+        injection: NDArray,
+        time: NDArray,
+        initial_guess: NDArray = None,
         num_cores: int = 1,
         random: bool = False,
         **kwargs,
@@ -269,16 +269,16 @@ class CRM:
 
         Args
         ----------
-        production : ndarray
+        production : NDArray
             production rates for each time period,
             shape: (n_time, n_producers)
-        injection : ndarray
+        injection : NDArray
             injection rates for each time period,
             shape: (n_time, n_injectors)
-        time : ndarray
+        time : NDArray
             relative time for each rate measurement, starting from 0,
             shape: (n_time)
-        initial_guess : ndarray
+        initial_guess : NDArray
             initial guesses for gains, taus, primary production contribution
             shape: (len(guess), n_producers)
         num_cores (int): number of cores to run fitting procedure on, defaults to 1
@@ -328,8 +328,8 @@ class CRM:
         opts_perwell = [self._split_opts(r["x"]) for r in results]
         gains_perwell, tau_perwell, gains_producer, tau_producer = map(list, zip(*opts_perwell))
 
-        self.gains = np.vstack(gains_perwell)
-        self.tau = np.vstack(tau_perwell)
+        self.gains: NDArray = np.vstack(gains_perwell)
+        self.tau: NDArray = np.vstack(tau_perwell)
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
         return self
@@ -341,9 +341,9 @@ class CRM:
 
         Args
         ----------
-        injection : ndarray
+        injection : NDArray
             The injection rates to input to the system, shape (n_time, n_inj)
-        time : ndarray
+        time : NDArray
             The timesteps to predict
         connections : dict
             if present, the gains, tau, gains_producer, tau_producer
@@ -351,7 +351,7 @@ class CRM:
 
         Returns
         ----------
-        q_hat :ndarray
+        q_hat :NDArray
             The predicted values, shape (n_time, n_producers)
         """
         if connections is not None:
@@ -387,11 +387,11 @@ class CRM:
 
         Args
         -----
-        production : ndarray
+        production : NDArray
             production rates with shape (n_time, n_producers)
-        injection : ndarray
+        injection : NDArray
             injection rates with shape (n_time, n_injectors)
-        time : ndarray
+        time : NDArray
             timesteps with shape n_time
         """
         _validate_inputs(production, injection, time)
@@ -407,15 +407,15 @@ class CRM:
 
         Args
         -----
-        gains : ndarray
+        gains : NDArray
             connectivity between injector and producer
             shape: n_gains, n_producers
-        tau : ndarray
+        tau : NDArray
             time-constant for injection to be felt by production
             shape: either n_producers or (n_gains, n_producers)
-        gains_producer : ndarray
+        gains_producer : NDArray
             gain on primary production, shape: n_producers
-        tau_producer : ndarray
+        tau_producer : NDArray
             Arps time constant for primary production, shape: n_producers
         """
         if gains is not None:
@@ -435,17 +435,17 @@ class CRM:
 
         Args
         ----------
-        production : ndarray
+        production : NDArray
             The production rates observed, shape: (n_timesteps, n_producers)
-        injection : ndarray
+        injection : NDArray
             The injection rates to input to the system,
             shape: (n_timesteps, n_injectors)
-        time : ndarray
+        time : NDArray
             The timesteps to predict
 
         Returns
         ----------
-        residual : ndarray
+        residual : NDArray
             The true production data minus the predictions, shape (n_time, n_producers)
         """
         q_hat = self.predict(injection, time)
@@ -499,7 +499,7 @@ class CRM:
             whether initial gains are randomly (true) or proportionally assigned
         Returns
         ----------
-        x0 : ndarray
+        x0 : NDArray
             Initial primary production gain, time constant and waterflood gains
             and time constants, as one long 1-d array
         """
@@ -509,7 +509,6 @@ class CRM:
         n_inj = self.injection.shape[1]
         n_prod = self.production.shape[1]
         d_t = self.time[1] - self.time[0]
-        n_gains, n_tau, n_primary = self._opt_numbers()[:3]
 
         axis = 1 if (self.constraints == "sum-to-one injector") else 0
         if random:
@@ -589,10 +588,10 @@ class CRM:
 
     def _calculate_qhat(
         self,
-        x: np.ndarray,
-        production: np.ndarray,
-        injection: np.ndarray,
-        time: np.ndarray,
+        x: NDArray,
+        production: NDArray,
+        injection: NDArray,
+        time: NDArray,
     ):
         gains, tau, gain_producer, tau_producer = self._split_opts(x)
         if self.primary:
@@ -603,10 +602,8 @@ class CRM:
         q_hat += self.q_CRM(injection, time, gains, tau)
         return q_hat
 
-    def _split_opts(self, x: np.ndarray):
+    def _split_opts(self, x: NDArray):
         n_inj = self.injection.shape[1]
-        # n_prod = self.production.shape[1]
-        n_gains, n_tau, n_primary = self._opt_numbers()
 
         gains = x[:n_inj]
         if self.tau_selection == "per-pair":
@@ -633,11 +630,11 @@ class CrmCompensated(CRM):
 
     def fit(
         self,
-        production: ndarray,
-        pressure: ndarray,
-        injection: ndarray,
-        time: ndarray,
-        initial_guess: ndarray = None,
+        production: NDArray,
+        pressure: NDArray,
+        injection: NDArray,
+        time: NDArray,
+        initial_guess: NDArray = None,
         num_cores: int = 1,
         random: bool = False,
         **kwargs,
@@ -646,19 +643,19 @@ class CrmCompensated(CRM):
 
         Args
         ----------
-        production : ndarray
+        production : NDArray
             production rates for each time period,
             shape: (n_time, n_producers)
-        pressure : ndarray
+        pressure : NDArray
             average pressure for each producer for each time period,
             shape: (n_time, n_producers)
-        injection : ndarray
+        injection : NDArray
             injection rates for each time period,
             shape: (n_time, n_injectors)
-        time : ndarray
+        time : NDArray
             relative time for each rate measurement, starting from 0,
             shape: (n_time)
-        initial_guess : ndarray
+        initial_guess : NDArray
             initial guesses for gains, taus, primary production
             contribution
             shape: (len(guess), n_producers)
@@ -727,12 +724,12 @@ class CrmCompensated(CRM):
 
     def _calculate_qhat(  # TODO: start here
         self,
-        x: np.ndarray,
-        production: np.ndarray,
-        injection: np.ndarray,
-        time: np.ndarray,
-        pressure_local: np.ndarray,
-        pressure: np.ndarray,
+        x: NDArray,
+        production: NDArray,
+        injection: NDArray,
+        time: NDArray,
+        pressure_local: NDArray,
+        pressure: NDArray,
     ):
         gains, tau, gain_producer, tau_producer, gain_pressure = self._split_opts(x)
         if self.primary:
@@ -748,7 +745,7 @@ class CrmCompensated(CRM):
         n_gain, n_tau, n_primary = super()._opt_numbers()
         return n_gain, n_tau, n_primary, self.production.shape[1]
 
-    def _split_opts(self, x: np.ndarray) -> tuple[ndarray, ndarray, Any, Any, ndarray]:
+    def _split_opts(self, x: NDArray) -> tuple[NDArray, NDArray, Any, Any, NDArray]:
         n_gains, n_tau, n_primary = self._opt_numbers()[:3]
         n_connectivity = n_gains + n_tau
 
@@ -783,7 +780,7 @@ class CrmCompensated(CRM):
 
         Returns
         ----------
-        x0 : ndarray
+        x0 : NDArray
             Initial primary production gain, time constant and waterflood gains
             and time constants, as one long 1-d array
         """
@@ -795,19 +792,19 @@ class CrmCompensated(CRM):
 
 
 def _validate_inputs(
-    production: ndarray | None = None,
-    injection: ndarray | None = None,
-    time: ndarray | None = None,
-    pressure: ndarray | None = None,
+    production: NDArray | None = None,
+    injection: NDArray | None = None,
+    time: NDArray | None = None,
+    pressure: NDArray | None = None,
 ) -> None:
     """Validate shapes and values of inputs.
 
     Args
     ----
-    production : ndarray, optional
-    injection : ndarray, optional
-    time : ndarray, optional
-    pressure : ndarray, optional
+    production : NDArray, optional
+    injection : NDArray, optional
+    time : NDArray, optional
+    pressure : NDArray, optional
 
     Raises
     ------
