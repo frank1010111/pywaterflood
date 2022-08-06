@@ -1,6 +1,6 @@
 // library
 
-use ndarray::{Array1, ArrayView1, Array2, ArrayView2, Zip};
+use ndarray::{Array1, ArrayView1, Array2, ArrayView2};
 use numpy::{
     IntoPyArray, PyArray1, PyReadonlyArray1,PyReadonlyArray2
 };
