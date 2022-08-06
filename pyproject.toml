@@ -51,7 +51,7 @@ docs = [
     "sphinx-rtd-theme",
 ]
 devwork = [
-    "jupyterlab",
+    "ipykernel",
     "seaborn",
 ]
 
