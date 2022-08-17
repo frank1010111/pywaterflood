@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pywaterflood"
-version = "0.2.1-alpha.2"
+version = "0.2.1-beta.1"
 description = "Physics-inspired waterflood performance modeling"
 authors = ["Frank Male <frmale@utexas.edu>"]
 license = "BSD"
