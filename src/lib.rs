@@ -21,8 +21,7 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
         tau_producer: f64,
     ) -> Array1<f64> {
         let time_decay = (-&time / tau_producer).mapv(f64::exp);
-        let q_hat = time_decay * production[[0]] * gain_producer;
-        q_hat
+        time_decay * production[[0]] * gain_producer
     }
 
     fn q_crm_perpair(
@@ -46,9 +45,25 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
                 }
             }
         }
-        let q_hat = convolve.dot(&gains);
-        q_hat
+        convolve.dot(&gains)
     }
+
+    fn q_bhp(
+        pressure_local: ArrayView1<'_, f64>,
+        pressure: ArrayView2<'_, f64>,
+        v_matrix: ArrayView1<'_, f64>
+    ) -> Array1<f64> {
+        let n_t: usize = pressure.raw_dim()[0];
+        let n_prod: usize = pressure.raw_dim()[1];
+        let mut pressure_diff: Array2<f64> = Array2::zeros([n_t, n_prod]);
+        for j in 0..n_prod {
+            for t in 1..n_t {
+                pressure_diff[[t, j]] = pressure_local[t-1] - pressure[[t, j]]
+            }
+        }
+        pressure_diff.dot(&v_matrix)
+    }
+
 
     //wrapper
     #[pyfn(m)]
@@ -80,6 +95,21 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
         let gains = gains.as_array();
         let taus = taus.as_array();
         let q = q_crm_perpair(injection, time, gains, taus);
+        q.into_pyarray(py)
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "q_bhp")]
+    fn q_bhp_py<'py>(
+        py: Python<'py>,
+        pressure_local:  PyReadonlyArray1<'_, f64>,
+        pressure: PyReadonlyArray2<'_, f64>,
+        v_matrix: PyReadonlyArray1<'_, f64>,
+    ) -> &'py PyArray1<f64> {
+        let pressure_local = pressure_local.as_array();
+        let pressure = pressure.as_array();
+        let v_matrix = v_matrix.as_array();
+        let q = q_bhp(pressure_local, pressure, v_matrix);
         q.into_pyarray(py)
     }
 
