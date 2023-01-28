@@ -14,8 +14,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        os: [ubuntu-22.04, windows-2022, macos-12]
     env:
+      # rust is not available for musl linux on i686. see https://github.com/rust-lang/rustup/issues/2984
+      CIBW_SKIP: "*-musllinux_i686"
       CIBW_BEFORE_ALL_LINUX:
         "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
@@ -24,7 +26,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.7.0
+        uses: pypa/cibuildwheel@v2.12.0
 
       - uses: actions/upload-artifact@v3
         with:
@@ -49,14 +51,29 @@ jobs:
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v3
+      - name: get sdists
+        uses: actions/download-artifact@v3
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
           name: artifact
           path: dist
 
+      - name: get wheelhouse artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: wheels
+          path: wheelhouse
+
+      - run: pipx run twine check wheelhouse/*
+      - run: cp wheelhouse/* dist/
+
       - uses: pypa/gh-action-pypi-publish@v1.5.0
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: wheelhouse/*
