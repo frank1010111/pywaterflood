@@ -20,12 +20,12 @@ from typing import Any, Tuple, Union
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from numba import njit
 from numpy import ndarray
 from scipy import optimize
 
+import pywaterflood.pywaterflood as pwf
 
-@njit
+
 def q_primary(
     production: ndarray, time: ndarray, gain_producer: ndarray, tau_producer: ndarray
 ) -> ndarray:
@@ -51,12 +51,9 @@ def q_primary(
     q_hat : ndarray
         Calculated production, size: Number of time steps
     """
-    time_decay = np.exp(-time / tau_producer)
-    q_hat = time_decay * production[0] * gain_producer
-    return q_hat
+    return pwf.q_primary(production, time, gain_producer, tau_producer)
 
 
-@njit
 def q_CRM_perpair(injection: ndarray, time: ndarray, gains: ndarray, taus: ndarray) -> ndarray:
     """Calculate per injector-producer pair production.
 
@@ -81,28 +78,9 @@ def q_CRM_perpair(injection: ndarray, time: ndarray, gains: ndarray, taus: ndarr
     q_hat : ndarray
         Calculated production, size: Number of time steps
     """
-    n = len(time)
-    q_hat = np.zeros(n)
-    conv_injected = np.zeros((n, injection.shape[1]))
-
-    # Compute convolved injection rates
-    for j in range(injection.shape[1]):
-        conv_injected[0, j] += (1 - np.exp((time[0] - time[1]) / taus[j])) * injection[0, j]
-        for k in range(1, n):
-            for m in range(1, k + 1):
-                time_decay = (1 - np.exp((time[m - 1] - time[m]) / taus[j])) * np.exp(
-                    (time[m] - time[k]) / taus[j]
-                )
-                conv_injected[k, j] += time_decay * injection[m, j]
-
-    # Calculate waterflood rates
-    for k in range(n):
-        for j in range(injection.shape[1]):
-            q_hat[k] += gains[j] * conv_injected[k, j]
-    return q_hat
+    return pwf.q_crm_perpair(injection, time, gains, taus)
 
 
-@njit
 def q_CRM_perproducer(injection: ndarray, time: ndarray, gain: ndarray, tau: float) -> ndarray:
     """Calculate per injector-producer pair production (simplified tank).
 
@@ -129,17 +107,6 @@ def q_CRM_perproducer(injection: ndarray, time: ndarray, gain: ndarray, tau: flo
     return q_CRM_perpair(injection, time, gain, tau2)
 
 
-@njit
-def _pressure_diff(pressure_local: ndarray, pressure: ndarray) -> ndarray:
-    """Pressure differences from local to each producer each timestep."""
-    n_t, n_p = pressure.shape
-    pressure_diff = np.zeros((n_p, n_t))
-    for j in range(n_p):
-        for t in range(1, n_t):
-            pressure_diff[j, t] = pressure_local[t - 1] - pressure[t, j]
-    return pressure_diff
-
-
 def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndarray:
     r"""Calculate the production effect from bottom-hole pressure variation.
 
@@ -162,9 +129,7 @@ def q_bhp(pressure_local: ndarray, pressure: ndarray, v_matrix: ndarray) -> ndar
         production from changing BHP
         shape: n_time
     """
-    pressure_diff = _pressure_diff(pressure_local, pressure)
-    q = np.einsum("j,jt->t", v_matrix, pressure_diff)
-    return q
+    return pwf.q_bhp(pressure_local, pressure, v_matrix)
 
 
 def random_weights(n_i: int, n_j: int, axis: int = 0, seed: int | None = None) -> ndarray:

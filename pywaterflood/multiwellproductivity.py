@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import scipy.linalg as sl
-from numba import njit
 from numpy import ndarray
 
 idx = pd.IndexSlice
@@ -128,7 +127,6 @@ def calc_influence_matrix(
     return influence_matrix["A"].unstack()
 
 
-@njit
 def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray) -> float:
     r"""Calculate element in the influence matrix.
 
@@ -167,7 +165,6 @@ def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: nda
     return first_term + calc_summed_term(x_i, y_i, x_j, y_j, y_D, m)
 
 
-@njit
 def calc_summed_term(
     x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
 ) -> float:
