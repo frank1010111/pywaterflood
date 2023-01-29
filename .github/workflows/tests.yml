@@ -29,8 +29,8 @@ jobs:
         with:
           command: develop
           args: --release
-      - name: Test with tox
-        run: pipx run tox
+      - name: Test with nox
+        run: pipx run nox -s tests
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v3
         with:

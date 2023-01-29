@@ -1,6 +1,6 @@
 [project]
 name = "pywaterflood"
-version = "0.2.1-alpha.1"
+version = "0.2.1-alpha.2"
 description = "Physics-inspired waterflood performance modeling"
 authors = [{name = "Frank Male", email ="frmale@utexas.edu"}]
 license = {file = "LICENSE"}
@@ -40,9 +40,7 @@ lint = [
 test = [
     "pytest >=6.2.5",
     "pytest-cov >=3.0.0",
-    "tox >=3.24.4",
     "coverage[toml] >=6.3.3",
-    "tox-gh-actions >=2.9.1",
 ]
 docs = [
     "myst-nb",
@@ -70,7 +68,7 @@ sdist-include = []
 # Bindings type
 bindings = "pyo3"
 # Control the platform tag on linux
-compatibility = "manylinux2014"
+compatibility = "linux"
 
 [tool.coverage.paths]
 source = ["pywaterflood", "*/site-packages"]
