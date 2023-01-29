@@ -51,7 +51,7 @@ jobs:
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - name: get sdists
+      - name: get artifacts
         uses: actions/download-artifact@v3
         with:
           # unpacks default artifact into dist/
@@ -59,14 +59,7 @@ jobs:
           name: artifact
           path: dist
 
-      - name: get wheelhouse artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: wheels
-          path: wheelhouse
-
-      - run: pipx run twine check wheelhouse/*
-      - run: cp wheelhouse/* dist/
+      - run: pipx run twine check dist/*
 
       - uses: pypa/gh-action-pypi-publish@v1.5.0
         with:
@@ -76,4 +69,4 @@ jobs:
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
         with:
-          files: wheelhouse/*
+          files: dist/*
