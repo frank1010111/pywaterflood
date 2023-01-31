@@ -1,6 +1,6 @@
 [project]
 name = "pywaterflood"
-version = "0.2.1-beta.2"
+version = "0.2.1b3"
 description = "Physics-inspired waterflood performance modeling"
 authors = [{name = "Frank Male", email ="frmale@utexas.edu"}]
 license = {file = "LICENSE"}
@@ -54,8 +54,6 @@ build-backend = "maturin"
 sdist-include = []
 # Bindings type
 bindings = "pyo3"
-# Control the platform tag on linux
-compatibility = "linux"
 
 [tool.coverage.run]
 branch = true

@@ -24,6 +24,9 @@ def lint(session: nox.Session) -> None:
 @nox.session
 def tests(session: nox.Session) -> None:
     """Run the unit and regular tests."""
+    session.install("maturin")
+    # You have to run `maturin develop` to avoid this: https://github.com/PyO3/maturin/issues/490
+    session.run("maturin", "develop")
     session.install(".[test]")
     session.run(
         "pytest",
@@ -57,4 +60,4 @@ def build(session: nox.Session) -> None:
         shutil.rmtree(build_p)
 
     session.install("build")
-    session.run("python", "-m", "build")
+    session.run("python", "-m", "build", "-o", "build")
