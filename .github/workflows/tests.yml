@@ -24,11 +24,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: dtolnay/rust-toolchain@stable
-      - name: build
-        uses: PyO3/maturin-action@v1
-        with:
-          command: develop
-          args: --release
       - name: Test with nox
         run: pipx run nox -s tests
       - name: "Upload coverage to Codecov"
