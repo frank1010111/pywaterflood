@@ -25,6 +25,7 @@ jobs:
       CIBW_BEFORE_ALL_LINUX:
         "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
+      CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
 
     steps:
       - uses: actions/checkout@v3

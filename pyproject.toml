@@ -52,6 +52,7 @@ build-backend = "maturin"
 [tool.maturin]
 # Include arbitrary files in the sdist
 sdist-include = []
+compatibility = "manylinux2014"
 # Bindings type
 bindings = "pyo3"
 
