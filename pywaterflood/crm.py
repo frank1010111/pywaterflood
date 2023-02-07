@@ -32,6 +32,7 @@ def q_primary(
     """Calculate primary production contribution.
 
     Uses Arps equation with b=0
+
     .. math::
         q_{p}(t) = q_i e^{-bt}
 
@@ -111,6 +112,7 @@ def q_bhp(pressure_local: NDArray, pressure: NDArray, v_matrix: NDArray) -> NDAr
     r"""Calculate the production effect from bottom-hole pressure variation.
 
     This looks like
+
     .. math::
         q_{BHP,j}(t_i) = \sum_{k} v_{kj}\left[ p_j(t_{i-1}) - p_k(t_i) \right]
 
