@@ -26,8 +26,7 @@ def tests(session: nox.Session) -> None:
     """Run the unit and regular tests."""
     session.install("maturin")
     # You have to run `maturin develop` to avoid this: https://github.com/PyO3/maturin/issues/490
-    session.run("maturin", "develop", "--release")
-    session.install(".[test]")
+    session.run("maturin", "develop", "--release", "--extras=test")
     session.run(
         "pytest",
         "--cov=pywaterflood",
