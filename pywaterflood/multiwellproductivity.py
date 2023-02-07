@@ -7,6 +7,8 @@ import pandas as pd
 import scipy.linalg as sl
 from numpy import ndarray
 
+import pywaterflood.pywaterflood as pwf
+
 idx = pd.IndexSlice
 
 
@@ -120,7 +122,7 @@ def calc_influence_matrix(
     influence_matrix = pd.DataFrame(
         index=pd.MultiIndex.from_product([XA.index, XB.index]), columns=["A"]
     )
-    m = 1 + np.arange(m_max)  # elements of sum
+    m = np.arange(1, m_max + 1, dtype="uint64")  # elements of sum
     for i, j in influence_matrix.index:
         x_i, y_i = XA.loc[i, ["X", "Y"]]
         x_j, y_j = XB.loc[j, ["X", "Y"]] + 1e-6
@@ -162,52 +164,4 @@ def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: nda
     -------
     A_ij : float
     """
-    first_term = 2 * np.pi * y_D * (1 / 3.0 - y_i / y_D + (y_i**2 + y_j**2) / (2 * y_D**2))
-    return first_term + calc_summed_term(x_i, y_i, x_j, y_j, y_D, m)
-
-
-def calc_summed_term(
-    x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray
-) -> float:
-    r"""Calculate summed term using Valkó 2000 equations A4-7.
-
-    .. math::
-        \sum_{m=1}^\infty \frac{t_m}m \cos(m\pi \tilde x_i)
-        \cos(m \pi \tilde x_j)
-    where
-
-    .. math::
-        t_m = \frac{\cosh\left(m\pi (y_D - |\tilde y_i - \tilde y_j|)\right)
-        + \cosh\left(m\pi (y_D - \tilde y_i - \tilde y_j\right)}
-        {\sinh\left(m\pi y_D \right)}
-
-    Args
-    ----
-    x_i : float
-        x-location of i'th well
-    y_i : float
-        y-location of i'th well
-    x_j : float
-        x-location of j'th well
-    y_j : float
-        y-location of j'th well
-    y_D : float
-        dimensionless parameter for y-direction
-    m : ndarray
-        series terms, from 1 to m_max
-
-    Returns
-    -------
-    summed_term : float
-    """
-    tm = (
-        np.cosh(m * np.pi * (y_D - np.abs(y_i - y_j))) + np.cosh(m * np.pi * (y_D - y_i - y_j))
-    ) / np.sinh(m * np.pi * y_D)
-
-    S1 = 2 * np.sum(tm / m * np.cos(m * np.pi * x_i) * np.cos(m * np.pi * x_j))
-    tN = tm[-1]
-    S2 = -tN / 2 * np.log(
-        (1 - np.cos(np.pi * (x_i + x_j))) ** 2 + np.sin(np.pi * (x_i + x_j)) ** 2
-    ) - tN / 2 * np.log((1 - np.cos(np.pi * (x_i - x_j))) ** 2 + np.sin(np.pi * (x_i - x_j)) ** 2)
-    S3 = -2 * tN * np.sum(1 / m * np.cos(m * np.pi * x_i) * np.cos(m * np.pi * x_j))
-    return S1 + S2 + S3
+    return pwf.calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
