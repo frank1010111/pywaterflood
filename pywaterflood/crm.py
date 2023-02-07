@@ -1,17 +1,16 @@
-"""Analyze waterfloods with capacitance-resistance models. # noqa: D401,D400
+"""Analyze waterfloods with capacitance-resistance models.
 
-Classes
--------
-CRM : standard capacitance resistance modeling
-CrmCompensated : including pressure
+This is the central module in :code:`pywaterflood`, based around the:code:`CRM`
+class, which implements the standard capacitance-resistance models. For most
+cases, the best performance comes from selecting
+:code:`CRM(primary=True, tau_selection="per-pair", constraints="up-to one")`.
+If the data is too sparse, then change :code:`tau_selection` to "per-producer".
 
-Methods
--------
-q_primary : primary production
-q_CRM_perpair : production due to injection (injector-producer pairs)
-q_CRM_perproducer : production due to injection (one producer, many injectors)
-q_bhp : production from changing bottomhole pressures of producers
-"""
+The base class assumes constant bottomhole pressures for the producing wells.
+If you know the pressures for these wells or at least the trend, consider using
+:code:`CrmCompensated`.
+
+"""  # noqa: D401,D400
 from __future__ import annotations
 
 import pickle
@@ -31,7 +30,7 @@ def q_primary(
 ) -> NDArray:
     """Calculate primary production contribution.
 
-    Uses Arps equation with b=0
+    Uses Arps equation with :math:`b=0`
 
     .. math::
         q_{p}(t) = q_i e^{-bt}
@@ -59,7 +58,7 @@ def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArr
     """Calculate per injector-producer pair production.
 
     Runs for influences of each injector on one producer, assuming
-    individual `gain`s and `tau`s for each pair
+    individual :code:`gain` and :code:`tau` for each pair
 
     Args
     ----------
@@ -158,10 +157,10 @@ def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = No
 class CRM:
     """A Capacitance Resistance Model history matcher.
 
-    CRM uses a physics-inspired mass balance approach to explain production for \
-        waterfloods. It treats each injector-producer well pair as a system \
-        with mass input, output, and pressure related to the mass balance. \
-        Several versions exist. Select them from the arguments.
+    CRM uses a physics-inspired mass balance approach to explain production for
+    waterfloods. It treats each injector-producer well pair as a system
+    with mass input, output, and pressure related to the mass balance.
+    Several versions exist. Select them from the arguments.
 
     Args
     ----------
@@ -626,7 +625,8 @@ class CrmCompensated(CRM):
             initial guesses for gains, taus, primary production
             contribution
             shape: (len(guess), n_producers)
-        num_cores (int): number of cores to run fitting procedure on, defaults to 1
+        num_cores : int
+            number of cores to run fitting procedure on, defaults to 1
         random : bool
             whether to randomly initialize the gains
         **kwargs:
