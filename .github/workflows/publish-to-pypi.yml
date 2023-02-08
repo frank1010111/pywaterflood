@@ -3,33 +3,38 @@ name: Build and upload to PyPI
 # Build on every branch push, tag push, and pull request change:
 on:
   push:
+    branches:
+      - master
   pull_request:
+    branches:
+      - master
   release:
     types:
       - published
 
 jobs:
-  # build_wheels:
-  #   name: Build wheels on ${{ matrix.os }}
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-20.04, windows-2019, macos-10.15]
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2022, macos-12]
+    env:
+      # rust is not available for musl linux on i686. see https://github.com/rust-lang/rustup/issues/2984
+      CIBW_SKIP: "*-musllinux_i686"
+      CIBW_BEFORE_ALL_LINUX:
+        "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
+      CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
 
-  #   steps:
-  #     - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - name: Build wheels
-  #       uses: pypa/cibuildwheel@v2.8.1
-  #       with:
-  #         package-dir: .
-  #         output-dir: wheelhouse
-  #       env:
-  #         CIBW_SKIP: "cp36-* cp311* pp*"
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.12.0
 
-  #     - uses: actions/upload-artifact@v3
-  #       with:
-  #         path: ./wheelhouse/*.whl
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
 
   build:
     name: Build source distribution
@@ -38,19 +43,18 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Build sdist
-        run: pipx run build --sdist --wheel
+        run: pipx run build --sdist
 
       - uses: actions/upload-artifact@v3
         with:
           path: dist/
 
   upload_testpypi:
-    needs: build
+    needs: [build, build_wheels]
     runs-on: ubuntu-latest
-    # Publish when a GitHub Release is created, use the following rule:
-    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v3
+      - name: get artifacts
+        uses: actions/download-artifact@v3
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
@@ -59,24 +63,35 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@v1.6.4
         with:
+          # If you've already pushed this version to TestPyPI, don't fail the job
+          skip_existing: true
           user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
 
   upload_pypi:
-    needs: build
+    needs: [build, build_wheels]
     runs-on: ubuntu-latest
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v3
+      - name: get artifacts
+        uses: actions/download-artifact@v3
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.6.4
+      - run: pipx run twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.6.4
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Upload artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*

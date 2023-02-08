@@ -8,7 +8,6 @@ import pytest
 from pywaterflood.crm import (
     CRM,
     CrmCompensated,
-    _pressure_diff,
     q_bhp,
     q_CRM_perpair,
     q_CRM_perproducer,
@@ -106,8 +105,6 @@ def test_q_bhp_nonan(reservoir_simulation_data):
     _, nprod = production.shape
     pressure = production.copy()
     rng = np.random.default_rng(42)
-    pressure_diff = _pressure_diff(pressure[:, 0], pressure)
-    assert not np.isnan(pressure_diff).flatten().any(), "No NaNs among pressure_diff"
     producer_gains = rng.normal(0, 1, nprod)
     q = q_bhp(pressure[:, 0], pressure, producer_gains)
     assert not np.isnan(q).any(), "No NaNs among results"

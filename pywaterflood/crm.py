@@ -1,17 +1,16 @@
-"""Analyze waterfloods with capacitance-resistance models. # noqa: D401,D400
+"""Analyze waterfloods with capacitance-resistance models.
 
-Classes
--------
-CRM : standard capacitance resistance modeling
-CrmCompensated : including pressure
+This is the central module in :code:`pywaterflood`, based around the:code:`CRM`
+class, which implements the standard capacitance-resistance models. For most
+cases, the best performance comes from selecting
+:code:`CRM(primary=True, tau_selection="per-pair", constraints="up-to one")`.
+If the data is too sparse, then change :code:`tau_selection` to "per-producer".
 
-Methods
--------
-q_primary : primary production
-q_CRM_perpair : production due to injection (injector-producer pairs)
-q_CRM_perproducer : production due to injection (one producer, many injectors)
-q_bhp : production from changing bottomhole pressures of producers
-"""
+The base class assumes constant bottomhole pressures for the producing wells.
+If you know the pressures for these wells or at least the trend, consider using
+:code:`CrmCompensated`.
+
+"""  # noqa: D401,D400
 from __future__ import annotations
 
 import pickle
@@ -20,18 +19,19 @@ from typing import Any, Tuple, Union
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from numba import njit
 from numpy.typing import NDArray
 from scipy import optimize
 
+import pywaterflood.pywaterflood as pwf
 
-@njit
+
 def q_primary(
     production: NDArray, time: NDArray, gain_producer: float, tau_producer: float
 ) -> NDArray:
     """Calculate primary production contribution.
 
-    Uses Arps equation with b=0
+    Uses Arps equation with :math:`b=0`
+
     .. math::
         q_{p}(t) = q_i e^{-bt}
 
@@ -51,17 +51,14 @@ def q_primary(
     q_hat : NDArray
         Calculated production, size: Number of time steps
     """
-    time_decay = np.exp(-time / tau_producer)
-    q_hat = time_decay * production[0] * gain_producer
-    return q_hat
+    return pwf.q_primary(production, time, gain_producer, tau_producer)
 
 
-@njit
 def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArray) -> NDArray:
     """Calculate per injector-producer pair production.
 
     Runs for influences of each injector on one producer, assuming
-    individual `gain`s and `tau`s for each pair
+    individual :code:`gain` and :code:`tau` for each pair
 
     Args
     ----------
@@ -81,28 +78,9 @@ def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArr
     q_hat : NDArray
         Calculated production, size: Number of time steps
     """
-    n = len(time)
-    q_hat = np.zeros(n)
-    conv_injected = np.zeros((n, injection.shape[1]))
-
-    # Compute convolved injection rates
-    for j in range(injection.shape[1]):
-        conv_injected[0, j] += (1 - np.exp((time[0] - time[1]) / taus[j])) * injection[0, j]
-        for k in range(1, n):
-            for m in range(1, k + 1):
-                time_decay = (1 - np.exp((time[m - 1] - time[m]) / taus[j])) * np.exp(
-                    (time[m] - time[k]) / taus[j]
-                )
-                conv_injected[k, j] += time_decay * injection[m, j]
-
-    # Calculate waterflood rates
-    for k in range(n):
-        for j in range(injection.shape[1]):
-            q_hat[k] += gains[j] * conv_injected[k, j]
-    return q_hat
+    return pwf.q_crm_perpair(injection, time, gains, taus)
 
 
-@njit
 def q_CRM_perproducer(injection: NDArray, time: NDArray, gain: NDArray, tau: float) -> NDArray:
     """Calculate per injector-producer pair production (simplified tank).
 
@@ -129,21 +107,11 @@ def q_CRM_perproducer(injection: NDArray, time: NDArray, gain: NDArray, tau: flo
     return q_CRM_perpair(injection, time, gain, tau2)
 
 
-@njit
-def _pressure_diff(pressure_local: NDArray, pressure: NDArray) -> NDArray:
-    """Pressure differences from local to each producer each timestep."""
-    n_t, n_p = pressure.shape
-    pressure_diff = np.zeros((n_p, n_t))
-    for j in range(n_p):
-        for t in range(1, n_t):
-            pressure_diff[j, t] = pressure_local[t - 1] - pressure[t, j]
-    return pressure_diff
-
-
 def q_bhp(pressure_local: NDArray, pressure: NDArray, v_matrix: NDArray) -> NDArray:
     r"""Calculate the production effect from bottom-hole pressure variation.
 
     This looks like
+
     .. math::
         q_{BHP,j}(t_i) = \sum_{k} v_{kj}\left[ p_j(t_{i-1}) - p_k(t_i) \right]
 
@@ -162,9 +130,7 @@ def q_bhp(pressure_local: NDArray, pressure: NDArray, v_matrix: NDArray) -> NDAr
         production from changing BHP
         shape: n_time
     """
-    pressure_diff = _pressure_diff(pressure_local, pressure)
-    q = np.einsum("j,jt->t", v_matrix, pressure_diff)
-    return q
+    return pwf.q_bhp(pressure_local, pressure, v_matrix)
 
 
 def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = None) -> NDArray:
@@ -191,10 +157,10 @@ def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = No
 class CRM:
     """A Capacitance Resistance Model history matcher.
 
-    CRM uses a physics-inspired mass balance approach to explain production for \
-        waterfloods. It treats each injector-producer well pair as a system \
-        with mass input, output, and pressure related to the mass balance. \
-        Several versions exist. Select them from the arguments.
+    CRM uses a physics-inspired mass balance approach to explain production for
+    waterfloods. It treats each injector-producer well pair as a system
+    with mass input, output, and pressure related to the mass balance.
+    Several versions exist. Select them from the arguments.
 
     Args
     ----------
@@ -659,7 +625,8 @@ class CrmCompensated(CRM):
             initial guesses for gains, taus, primary production
             contribution
             shape: (len(guess), n_producers)
-        num_cores (int): number of cores to run fitting procedure on, defaults to 1
+        num_cores : int
+            number of cores to run fitting procedure on, defaults to 1
         random : bool
             whether to randomly initialize the gains
         **kwargs:

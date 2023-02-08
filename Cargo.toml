@@ -1,0 +1,15 @@
+[package]
+name = "pywaterflood"
+version = "0.2.0"
+edition = "2018"
+
+
+[lib]
+name = "pywaterflood"
+# "cdylib" is necessary to produce a shared library for Python to import from.
+crate-type = ["cdylib"]
+
+[dependencies]
+ndarray = "0.15.4"
+numpy = "0.16.2"
+pyo3 = { version = "0.16", features = ["extension-module", "abi3-py37"] }

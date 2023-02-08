@@ -43,17 +43,25 @@ If you are proposing a feature:
 Ready to contribute? Here's how to set up `pywaterflood` for local development.
 
 1. Download a copy of `pywaterflood` locally.
-2. Install `pywaterflood` using `pip`:
 
    ```console
-   $ pip install .
+   git clone https://github.com/frank1010111/pywaterflood.git
+   ```
+
+2. Install `pywaterflood` in a virtual environment using `maturin`:
+
+   ```console
+   python -m venv venv
+   source venv/bin/activate  # assuming linux, MacOS, or git-bash
+   pip install maturin
+   maturin develop
    ```
 
 3. Use `git` (or similar) to create a branch for local development and make your
    changes:
 
    ```console
-   $ git checkout -b name-of-your-bugfix-or-feature
+   git checkout -b name-of-your-bugfix-or-feature
    ```
 
 4. When you're done making changes, check that your changes conform to any code

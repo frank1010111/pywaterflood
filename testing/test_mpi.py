@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.typing import NDArray
 
 from pywaterflood.multiwellproductivity import (
     calc_A_ij,
@@ -39,9 +40,13 @@ def test_translate(locations):
 
 def test_Aij():
     "From the worked example by Kaviani and Valkó"
-    m = 1 + np.arange(300)
+    m = 1 + np.arange(300, dtype="uint64")
     results = calc_A_ij(0.233351184, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
     assert pytest.approx(10.6867, abs=0.01) == results
+    for x_i in [0.0, 0.2, 0.3, 0.5]:
+        old_A_ij = calc_A_ij_old(x_i, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
+        rust_A_ij = calc_A_ij(x_i, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
+        assert pytest.approx(old_A_ij, 1e-3) == rust_A_ij
 
 
 def test_calc_gains(locations):
@@ -61,3 +66,55 @@ def test_influence_matrix(locations):
 
     matrix_prod = calc_influence_matrix(locations, y_D=0.7, matrix_type="prod", m_max=100)
     assert not np.isnan(matrix_prod.values).flatten().any()
+
+
+def calc_A_ij_old(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: NDArray) -> float:
+    r"""Calculate element in the influence matrix.
+
+    .. math::
+
+        A_{ij} = 2 \pi y_D (\frac13 - \frac{y_i}{y_D} +
+            \frac{y_i^2 + y_j^2}{2 y_D^2})
+            + \sum_{m=1}^\infty \frac{t_m}m \cos(m\pi \tilde x_i)
+            \cos(m \pi \tilde x_j)
+    where
+
+    .. math::
+        t_m = \frac{\cosh\left(m\pi (y_D - |\tilde y_i - \tilde y_j|)\right)
+        + \cosh\left(m\pi (y_D - \tilde y_i - \tilde y_j\right)}
+        {\sinh\left(m\pi y_D \right)}
+
+    Args
+    ----
+    x_i : float
+        x-location of i'th well
+    y_i : float
+        y-location of i'th well
+    x_j : float
+        x-location of j'th well
+    y_j : float
+        y-location of j'th well
+    y_D : float
+        dimensionless parameter for y-direction
+    m : ndarray
+        series terms, from 1 to m_max
+
+    Returns
+    -------
+    A_ij : float
+    """
+    first_term = 2 * np.pi * y_D * (1 / 3.0 - y_i / y_D + (y_i**2 + y_j**2) / (2 * y_D**2))
+
+    tm = (
+        np.cosh(m * np.pi * (y_D - np.abs(y_i - y_j))) + np.cosh(m * np.pi * (y_D - y_i - y_j))
+    ) / np.sinh(m * np.pi * y_D)
+
+    S1 = 2 * np.sum(tm / m * np.cos(m * np.pi * x_i) * np.cos(m * np.pi * x_j))
+    tN = tm[-1]
+    S2 = -tN / 2 * np.log(
+        (1 - np.cos(np.pi * (x_i + x_j))) ** 2 + np.sin(np.pi * (x_i + x_j)) ** 2
+    ) - tN / 2 * np.log((1 - np.cos(np.pi * (x_i - x_j))) ** 2 + np.sin(np.pi * (x_i - x_j)) ** 2)
+    S3 = -2 * tN * np.sum(1 / m * np.cos(m * np.pi * x_i) * np.cos(m * np.pi * x_j))
+    summed_term = S1 + S2 + S3
+
+    return first_term + summed_term
