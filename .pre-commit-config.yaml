@@ -67,5 +67,10 @@ repos:
     rev: v2.32.1
     hooks:
       - id: pyupgrade
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+      - id: cargo-check
 ci:
   autoupdate_commit_msg: ":hook: chore: update pre-commit hooks"
