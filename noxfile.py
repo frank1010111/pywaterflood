@@ -46,7 +46,7 @@ def docs(session: nox.Session) -> None:
 
     if session.posargs:
         if "serve" in session.posargs:
-            print("Launching docs at http://localhost:8000/ - use Ctrl-C to quit")
+            print("Launching docs at http://localhost:8000/ - use Ctrl-C to quit")  # noqa: T201
             session.run("python", "-m", "http.server", "8000", "-d", "_build/html")
         else:
             session.warn("Unsupported argument to docs")
