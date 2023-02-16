@@ -10,11 +10,12 @@ The base class assumes constant bottomhole pressures for the producing wells.
 If you know the pressures for these wells or at least the trend, consider using
 :code:`CrmCompensated`.
 
-"""  # noqa: D401,D400
+"""
 from __future__ import annotations
 
 import pickle
-from typing import Any, Tuple, Union
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -199,7 +200,8 @@ class CRM:
     ):
         """Initialize CRM with appropriate settings."""
         if type(primary) != bool:
-            raise TypeError("primary must be a boolean")
+            msg = "primary must be a boolean"
+            raise TypeError(msg)
         self.primary = primary
         if constraints not in (
             "positive",
@@ -207,7 +209,8 @@ class CRM:
             "sum-to-one",
             "sum-to-one injector",
         ):
-            raise ValueError("Invalid constraints")
+            msg = "Invalid constraints"
+            raise ValueError(msg)
         self.constraints = constraints
         self.tau_selection = tau_selection
         if tau_selection == "per-pair":
@@ -215,11 +218,8 @@ class CRM:
         elif tau_selection == "per-producer":
             self.q_CRM = q_CRM_perproducer
         else:
-            raise ValueError(
-                "tau_selection must be one of"
-                + '("per-pair","per-producer")'
-                + f", not {tau_selection}"
-            )
+            msg = f'tau_selection must be one of ("per-pair","per-producer"), not {tau_selection}'
+            raise ValueError(msg)
 
     def fit(
         self,
@@ -274,7 +274,7 @@ class CRM:
                     (production - self._calculate_qhat(x, production, injection, time)) ** 2
                 )
 
-            result = optimize.minimize(
+            return optimize.minimize(
                 residual,
                 x0,
                 bounds=bounds,
@@ -282,10 +282,9 @@ class CRM:
                 args=(production,),
                 **kwargs,
             )
-            return result
 
         if num_cores == 1:
-            results = map(fit_well, self.production.T, initial_guess)  # type: ignore
+            results = map(fit_well, self.production.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
                 delayed(fit_well)(p, x0) for p, x0 in zip(self.production.T, initial_guess)
@@ -294,8 +293,8 @@ class CRM:
         opts_perwell = [self._split_opts(r["x"]) for r in results]
         gains_perwell, tau_perwell, gains_producer, tau_producer = map(list, zip(*opts_perwell))
 
-        self.gains: NDArray = np.vstack(gains_perwell)  # type: ignore
-        self.tau: NDArray = np.vstack(tau_perwell)  # type: ignore
+        self.gains: NDArray = np.vstack(gains_perwell)
+        self.tau: NDArray = np.vstack(tau_perwell)
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
         return self
@@ -334,13 +333,15 @@ class CRM:
         n_producers = production.shape[1]
 
         if int(injection is None) + int(time is None) == 1:
-            raise TypeError("predict() takes 1 or 3 arguments, 2 given")
+            msg = "predict() takes 1 or 3 arguments, 2 given"
+            raise TypeError(msg)
         if injection is None:
             injection = self.injection
         if time is None:
             time = self.time
         if time.shape[0] != injection.shape[0]:
-            raise ValueError("injection and time need same number of steps")
+            msg = "injection and time need same number of steps"
+            raise ValueError(msg)
 
         q_hat = np.zeros((len(time), n_producers))
         for i in range(n_producers):
@@ -430,7 +431,8 @@ class CRM:
         """
         for x in ("gains", "tau", "gains_producer", "tau_producer"):
             if x not in self.__dict__.keys():
-                raise (ValueError("Model has not been trained"))
+                msg = "Model has not been trained"
+                raise ValueError(msg)
         with pd.ExcelWriter(fname) as f:
             pd.DataFrame(self.gains).to_excel(f, sheet_name="Gains")
             pd.DataFrame(self.tau).to_excel(f, sheet_name="Taus")
@@ -449,7 +451,7 @@ class CRM:
         fname : str
             pickle file to write out
         """
-        with open(fname, "wb") as f:
+        with Path(fname).open("wb") as f:
             pickle.dump(self, f)
 
     def _get_initial_guess(self, tau_selection: str | None = None, random=False):
@@ -505,19 +507,13 @@ class CRM:
             ]
         else:
             x0 = [np.concatenate([gains_guess1[i, :], tau_guess1[i, :]]) for i in range(n_prod)]
-        return x0
+        return x0  # noqa: 504
 
     def _opt_numbers(self) -> tuple[int, int, int]:
         """Return the number of gains, taus, and primary production parameters to fit."""
         n_gains = self.injection.shape[1]
-        if self.tau_selection == "per-pair":
-            n_tau = n_gains
-        else:
-            n_tau = 1
-        if self.primary:
-            n_primary = 2
-        else:
-            n_primary = 0
+        n_tau = n_gains if self.tau_selection == "per-pair" else 1
+        n_primary = 2 if self.primary else 0
         return n_gains, n_tau, n_primary
 
     def _get_bounds(self, constraints: str = "") -> tuple[tuple, tuple | dict]:
@@ -530,7 +526,7 @@ class CRM:
 
         if self.constraints == "positive":
             bounds = ((0, np.inf),) * n
-            constraints_optimizer = ()  # type: Union[Tuple, dict]
+            constraints_optimizer = ()  # type: tuple | dict
         elif self.constraints == "sum-to-one":
             bounds = ((0, np.inf),) * n
 
@@ -539,15 +535,16 @@ class CRM:
                 return np.sum(x) - 1
 
             constraints_optimizer = {"type": "eq", "fun": constrain}
-        elif self.constraints == "sum-to-one injector":
-            raise NotImplementedError("sum-to-one injector is not implemented")
         elif self.constraints == "up-to one":
             lb = np.full(n, 0)
             ub = np.full(n, np.inf)
             ub[:n_inj] = 1
             bounds = tuple(zip(lb, ub))
             constraints_optimizer = ()
-        else:
+        elif self.constraints == "sum-to-one injector":
+            msg = "sum-to-one injector is not implemented"
+            raise NotImplementedError(msg)
+        else:  # noqa: RET506
             bounds = ((0, np.inf),) * n
             constraints_optimizer = ()
         return bounds, constraints_optimizer
@@ -572,10 +569,7 @@ class CRM:
         n_inj = self.injection.shape[1]
 
         gains = x[:n_inj]
-        if self.tau_selection == "per-pair":
-            tau = x[n_inj : n_inj * 2]
-        else:
-            tau = x[n_inj]
+        tau = x[n_inj : n_inj * 2] if self.tau_selection == "per-pair" else x[n_inj]
         if self.primary:
             gain_producer = x[-2]
             tau_producer = x[-1]
@@ -659,7 +653,7 @@ class CrmCompensated(CRM):
                     ** 2
                 )
 
-            result = optimize.minimize(
+            return optimize.minimize(
                 residual,
                 x0,
                 bounds=bounds,
@@ -667,10 +661,9 @@ class CrmCompensated(CRM):
                 args=(production,),
                 **kwargs,
             )
-            return result
 
         if num_cores == 1:
-            results = map(fit_well, self.production.T, pressure.T, initial_guess)  # type: ignore
+            results = map(fit_well, self.production.T, pressure.T, initial_guess)
         else:
             results = Parallel(n_jobs=num_cores)(
                 delayed(fit_well)(prod, pressure, x0)
@@ -682,14 +675,14 @@ class CrmCompensated(CRM):
             list, zip(*opts_perwell)
         )
 
-        self.gains: NDArray = np.vstack(gains_perwell)  # type: ignore
-        self.tau: NDArray = np.vstack(tau_perwell)  # type: ignore
+        self.gains: NDArray = np.vstack(gains_perwell)
+        self.tau: NDArray = np.vstack(tau_perwell)
         self.gains_producer = np.array(gains_producer)
         self.tau_producer = np.array(tau_producer)
-        self.gain_pressure: NDArray = np.vstack(gain_pressure)  # type: ignore
+        self.gain_pressure: NDArray = np.vstack(gain_pressure)
         return self
 
-    def _calculate_qhat(  # TODO: start here
+    def _calculate_qhat(
         self,
         x: NDArray,
         production: NDArray,
@@ -754,8 +747,7 @@ class CrmCompensated(CRM):
         guess = super()._get_initial_guess(tau_selection=tau_selection, random=random)
         _, _, _, n_pressure = self._opt_numbers()
         pressure_guess = np.ones(n_pressure)
-        guess = [np.concatenate([guess[i], pressure_guess]) for i in range(len(guess))]
-        return guess
+        return [np.concatenate([guess[i], pressure_guess]) for i in range(len(guess))]
 
 
 def _validate_inputs(
@@ -787,25 +779,32 @@ def _validate_inputs(
     # Shapes
     test_prod_inj_timesteps = production is not None and injection is not None
     if test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
-        raise ValueError("production and injection do not have the same number of timesteps")
+        msg = "production and injection do not have the same number of timesteps"
+        raise ValueError(msg)
     if time is not None:
         for timeseries in inputs:
             if inputs[timeseries].shape[0] != time.shape[0]:
-                raise ValueError(f"{timeseries} and time do not have the same number of timesteps")
+                msg = f"{timeseries} and time do not have the same number of timesteps"
+                raise ValueError(msg)
     if production is not None:
         if (injection is not None) and (production.shape[0] != injection.shape[0]):
-            raise ValueError("production and injection do not have the same number of timesteps")
+            msg = "production and injection do not have the same number of timesteps"
+            raise ValueError(msg)
         if (pressure is not None) and (production.shape != pressure.shape):
-            raise ValueError("production and pressure are not of the same shape")
+            msg = "production and pressure are not of the same shape"
+            raise ValueError(msg)
     if (
         (injection is not None)
         and (pressure is not None)
         and (injection.shape[0] != pressure.shape[0])
     ):
-        raise ValueError("injection and pressure do not have the same number of timesteps")
+        msg = "injection and pressure do not have the same number of timesteps"
+        raise ValueError(msg)
     # Values
     for timeseries in inputs:
         if np.any(np.isnan(inputs[timeseries])):
-            raise ValueError(f"{timeseries} cannot have NaNs")
+            msg = f"{timeseries} cannot have NaNs"
+            raise ValueError(msg)
         if np.any(inputs[timeseries] < 0.0):
-            raise ValueError(f"{timeseries} cannot be negative")
+            msg = f"{timeseries} cannot be negative"
+            raise ValueError(msg)

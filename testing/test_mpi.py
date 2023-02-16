@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from numpy.typing import NDArray
-
 from pywaterflood.multiwellproductivity import (
     calc_A_ij,
     calc_gains_homogeneous,
@@ -15,7 +14,7 @@ from pywaterflood.multiwellproductivity import (
 raw_locs = pd.DataFrame()
 
 
-@pytest.fixture
+@pytest.fixture()
 def locations():
     "Well locations for an inverted 5-spot."
     xy = [(1, 1), (20, 1), (1, 20), (20, 20), (10.5, 10.5)]
@@ -28,8 +27,7 @@ def locations():
             "Type": ["Producer"] * 4 + ["Injector"],
         }
     )
-    locations = translate_locations(locations, "x", "y", "Type")
-    return locations
+    return translate_locations(locations, "x", "y", "Type")
 
 
 def test_translate(locations):

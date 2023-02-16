@@ -53,10 +53,8 @@ def calc_gains_homogeneous(locations: pd.DataFrame, x_e: float, y_e: float) -> p
     term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.values - 1
     term3 = A_prod_inv @ A_conn.values
     Lambda = term1 @ term2 - term3
-    connectivity_df = pd.DataFrame(Lambda, index=A_prod.index, columns=A_conn.columns).rename_axis(
-        index="Producers", columns="Injectors"
-    )
-    return connectivity_df
+    connectivity_df = pd.DataFrame(Lambda, index=A_prod.index, columns=A_conn.columns)
+    return connectivity_df.rename_axis(index="Producers", columns="Injectors")
 
 
 def translate_locations(
@@ -113,12 +111,10 @@ def calc_influence_matrix(
         a matrix with the influences between wells
     """
     if matrix_type not in ["conn", "prod"]:
-        raise ValueError("matrix_type must be either `conn` or `prod`")
+        msg = "matrix_type must be either `conn` or `prod`"
+        raise ValueError(msg)
     XA = locations[locations.Type == "Producer"]
-    if matrix_type == "prod":
-        XB = XA.copy()
-    else:
-        XB = locations[locations.Type == "Injector"]
+    XB = XA.copy() if matrix_type == "prod" else locations[locations.Type == "Injector"]
     influence_matrix = pd.DataFrame(
         index=pd.MultiIndex.from_product([XA.index, XB.index]), columns=["A"]
     )

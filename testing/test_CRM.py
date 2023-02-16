@@ -4,7 +4,6 @@ from itertools import product
 
 import numpy as np
 import pytest
-
 from pywaterflood.crm import (
     CRM,
     CrmCompensated,
@@ -22,7 +21,7 @@ test_args = list(product(primary, tau_selection, constraints))
 data_dir = "testing/data/"
 
 
-@pytest.fixture
+@pytest.fixture()
 def reservoir_simulation_data():
     injection = np.genfromtxt(data_dir + "injection.csv", delimiter=",")
     production = np.genfromtxt(data_dir + "production.csv", delimiter=",")
@@ -30,7 +29,7 @@ def reservoir_simulation_data():
     return injection, production, time
 
 
-@pytest.fixture
+@pytest.fixture()
 def trained_model(reservoir_simulation_data):
     def _trained_model(*args, **kwargs):
         crm = CRM(*args, **kwargs)
@@ -136,9 +135,9 @@ class TestInstantiate:
     def test_init_fails(self, primary, tau_selection, constraints):
         with pytest.raises(TypeError):
             CRM(primary="yes", tau_selection=tau_selection, constraints=constraints)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="constraints"):
             CRM(primary=primary, tau_selection=tau_selection, constraints="negative")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="tau"):
             CRM(primary=primary, tau_selection="per-Bob", constraints=constraints)
 
 
@@ -153,10 +152,7 @@ class TestPredict:
         prediction2 = crm.predict(injection, time)
         assert prediction1 == pytest.approx(prediction2, abs=1.0)
 
-        if primary:
-            primary_str = "primary"
-        else:
-            primary_str = "noprimary"
+        primary_str = "primary" if primary else "noprimary"
 
         assert prediction1 == pytest.approx(
             np.genfromtxt(
@@ -169,9 +165,9 @@ class TestPredict:
     def test_predict_fails(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary, tau_selection)
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="arguments"):
             crm.predict(injection)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="number of steps"):
             crm.predict(injection, time[:-1])
 
 
@@ -182,50 +178,50 @@ class TestFit:
     ):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="same number"):
             crm.set_rates(production[:-5], injection, time)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="same number"):
             crm.set_rates(production, injection[:-5], time)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="same number"):
             crm.set_rates(production, injection, time[:-5])
         prod_bad = production.copy()
         prod_bad[4, 0] = -1
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="negative"):
             crm.set_rates(prod_bad, injection, time)
         prod_bad[4, 0] = np.nan
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="NaN"):
             crm.set_rates(prod_bad, injection, time)
         inj_bad = injection.copy()
         inj_bad[2, 2] = -1
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="negative"):
             crm.set_rates(production, inj_bad, time)
         inj_bad[2, 2] = np.nan
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="NaN"):
             crm.set_rates(production, inj_bad, time)
         time_bad = time.copy()
         time_bad[0] = -1
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="negative"):
             crm.set_rates(time=time_bad)
         time_bad[0] = np.nan
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="NaN"):
             crm.set_rates(time=time_bad)
 
     def test_fit_fails(self, reservoir_simulation_data, primary, tau_selection, constraints):
         crm = CRM(primary, tau_selection, constraints)
         injection, production, time = reservoir_simulation_data
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="missing .* positional argument"):
             crm.fit(production)
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="missing .* positional argument"):
             crm.fit(production, injection)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production[:-1], injection, time)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production, injection[:-1], time)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production, injection, time[:-1])
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
@@ -248,7 +244,7 @@ class TestFit:
             options={"maxiter": 3},
         )
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_fit_initial_guess(
         self, reservoir_simulation_data, primary, tau_selection, constraints
     ):
@@ -275,10 +271,10 @@ class TestExport:
 
     def test_to_excel_fails(self, trained_model, primary, tmpdir):
         crm = trained_model(primary)
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="missing .* argument"):
             crm.to_excel()
         crm2 = CRM(primary)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Model has not been trained"):
             crm2.to_excel(tmpdir + "/test.xlsx")
 
     def test_to_pickle(self, trained_model, primary, tmpdir):
@@ -287,7 +283,7 @@ class TestExport:
 
     def test_to_pickle_fails(self, trained_model, primary):
         crm = trained_model(primary)
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="missing .* argument"):
             crm.to_pickle()
 
 

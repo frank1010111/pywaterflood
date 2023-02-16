@@ -14,7 +14,6 @@ run `python testing/regenerate_results.py` from the project directory
 from __future__ import annotations
 
 import numpy as np
-
 from pywaterflood import CRM
 
 # from pywaterflood.crm import CrmCompensated, q_bhp
@@ -45,21 +44,16 @@ def _trained_model(*args, **kwargs):
 def test_predict(primary, tau_selection):
     """Predictions for test cases."""
     crm = _trained_model(primary=primary, tau_selection=tau_selection)
-
-    prediction = crm.predict()
-    return prediction
+    return crm.predict()
 
 
 if __name__ == "__main__":
-    print("Regenerating prediction files")
+    print("Regenerating prediction files")  # noqa: T201
     primary = (True, False)
     tau_selection = ("per-pair", "per-producer")
     for p in primary:
         for t in tau_selection:
             prediction = test_predict(p, t)
-            if p:
-                primary_str = "primary"
-            else:
-                primary_str = "noprimary"
+            primary_str = "primary" if p else "noprimary"
             np.savetxt(f"{data_dir}prediction_{primary_str}_{t}.csv", prediction, delimiter=",")
-    print("Finished")
+    print("Finished")  # noqa: T201
