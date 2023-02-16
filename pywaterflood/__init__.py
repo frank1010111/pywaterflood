@@ -12,7 +12,7 @@ from __future__ import annotations
 import sys
 
 from pywaterflood.crm import CRM, CrmCompensated
-from pywaterflood.multiwellproductivity import (  # noqa: F401
+from pywaterflood.multiwellproductivity import (
     calc_gains_homogeneous,
     translate_locations,
 )
