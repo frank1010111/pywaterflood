@@ -97,7 +97,6 @@ extend-ignore = [
 ]
 line-length = 99
 target-version = "py37"
-# typing-modules = ["mypackage._compat.typing"]
 src = ["pywaterflood"]
 unfixable = [
   "T20",  # Removes print statements
