@@ -638,7 +638,7 @@ class CrmCompensated(CRM):
         self.time = time
         self.pressure = pressure
 
-        if not initial_guess:
+        if initial_guess is None:
             initial_guess = self._get_initial_guess(random=random)
         bounds, constraints = self._get_bounds()
 
