@@ -64,6 +64,8 @@ def test_influence_matrix(locations):
 
     matrix_prod = calc_influence_matrix(locations, y_D=0.7, matrix_type="prod", m_max=100)
     assert not np.isnan(matrix_prod.values).flatten().any()
+    with pytest.raises(ValueError, match="matrix_type must be"):
+        calc_influence_matrix(locations, y_D=0.7, matrix_type="wrong")
 
 
 def calc_A_ij_old(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: NDArray) -> float:
