@@ -150,7 +150,9 @@ class TestPredict:
 
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
+        prediction3 = crm.predict(connections={"gains": crm.gains})
         assert prediction1 == pytest.approx(prediction2, abs=1.0)
+        assert prediction2 == pytest.approx(prediction3, abs=1)
 
         primary_str = "primary" if primary else "noprimary"
 
@@ -169,6 +171,31 @@ class TestPredict:
             crm.predict(injection)
         with pytest.raises(ValueError, match="number of steps"):
             crm.predict(injection, time[:-1])
+
+    def test_set_connections(
+        self, reservoir_simulation_data, trained_model, primary, tau_selection
+    ):
+        injection, production, time = reservoir_simulation_data
+        crm = trained_model(primary=primary, tau_selection=tau_selection)
+        crm2 = CRM()
+        crm2.set_connections(
+            gains=crm.gains,
+            tau=crm.tau,
+            gains_producer=crm.gains_producer,
+            tau_producer=crm.tau_producer,
+        )
+        prediction2 = crm2.predict(injection, time, production=production)
+        assert crm.predict(injection, time) == pytest.approx(prediction2)
+        assert production.shape == prediction2.shape
+
+    def test_residual(self, reservoir_simulation_data, trained_model, primary, tau_selection):
+        injection, production, time = reservoir_simulation_data
+        crm = trained_model(primary=primary, tau_selection=tau_selection)
+        q_hat = crm.predict(injection, time)
+        resid1 = production - q_hat
+        resid2 = crm.residual(production, injection, time)
+        assert resid1 == pytest.approx(resid2)
+        assert resid1.shape == (len(time), production.shape[-1])
 
 
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
@@ -222,7 +249,10 @@ class TestFit:
             crm.fit(production, injection, time[:-1])
 
     @pytest.mark.slow()
-    def test_fit_serial(self, reservoir_simulation_data, primary, tau_selection, constraints):
+    @pytest.mark.parametrize("random", [True, False])
+    def test_fit_serial(
+        self, reservoir_simulation_data, primary, tau_selection, constraints, random
+    ):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.fit(
@@ -231,9 +261,13 @@ class TestFit:
             time,
             num_cores=1,
             options={"maxiter": 3},
+            random=random,
         )
 
-    def test_fit_parallel(self, reservoir_simulation_data, primary, tau_selection, constraints):
+    @pytest.mark.parametrize("random", [True, False])
+    def test_fit_parallel(
+        self, reservoir_simulation_data, primary, tau_selection, constraints, random
+    ):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.fit(
@@ -242,25 +276,26 @@ class TestFit:
             time,
             num_cores=4,
             options={"maxiter": 3},
+            random=random,
         )
 
     @pytest.mark.slow()
+    @pytest.mark.parametrize("random", [True, False])
     def test_fit_initial_guess(
-        self, reservoir_simulation_data, primary, tau_selection, constraints
+        self, reservoir_simulation_data, primary, tau_selection, constraints, random
     ):
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.set_rates(production, injection, time)
         x0 = crm._get_initial_guess(tau_selection)
-        for random in (True, False):
-            crm.fit(
-                production,
-                injection,
-                time,
-                random=random,
-                initial_guess=x0,
-                options={"maxiter": 3},
-            )
+        crm.fit(
+            production,
+            injection,
+            time,
+            random=random,
+            initial_guess=x0,
+            options={"maxiter": 3},
+        )
 
 
 @pytest.mark.parametrize("primary", primary)
