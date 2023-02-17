@@ -184,6 +184,7 @@ class TestPredict:
             gains_producer=crm.gains_producer,
             tau_producer=crm.tau_producer,
         )
+        crm2.set_connections()  # no-op, hopefully
         prediction2 = crm2.predict(injection, time, production=production)
         assert crm.predict(injection, time) == pytest.approx(prediction2)
         assert production.shape == prediction2.shape
@@ -247,6 +248,9 @@ class TestFit:
             crm.fit(production, injection[:-1], time)
         with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production, injection, time[:-1])
+        crm.constraints = "sum-to-one injector"
+        with pytest.raises(NotImplementedError):
+            crm.fit(production, injection, time)
 
     @pytest.mark.slow()
     @pytest.mark.parametrize("random", [True, False])
@@ -287,6 +291,7 @@ class TestFit:
         injection, production, time = reservoir_simulation_data
         crm = CRM(primary, tau_selection, constraints)
         crm.set_rates(production, injection, time)
+        crm.set_rates()  # no-op
         x0 = crm._get_initial_guess(tau_selection)
         crm.fit(
             production,
@@ -327,3 +332,36 @@ class TestBhp:
     def test_init_bhp(self, primary, tau_selection, constraints):
         crm = CrmCompensated(primary, tau_selection, constraints)
         assert crm.primary == primary
+
+    @pytest.mark.parametrize("random", [True, False])
+    @pytest.mark.parametrize("num_cores", [1, 4])
+    @pytest.mark.parametrize("initial_guess", [True, None])
+    def test_fit(
+        self,
+        reservoir_simulation_data,
+        primary,
+        tau_selection,
+        constraints,
+        random,
+        num_cores,
+        initial_guess,
+    ):
+        injection, production, time = reservoir_simulation_data
+        crm = CrmCompensated(primary, tau_selection, constraints)
+        crm.set_rates(production, injection, time)
+        pressure = np.ones_like(production)
+        if initial_guess:
+            initial_guess = crm._get_initial_guess(random=random)
+        crm.fit(
+            production,
+            pressure,
+            injection,
+            time,
+            initial_guess,
+            num_cores=num_cores,
+            options={"maxiter": 3},
+            random=random,
+        )
+        prediction1 = crm.predict()
+        prediction2 = crm.predict(injection, time)
+        assert prediction1 == pytest.approx(prediction2)
