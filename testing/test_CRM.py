@@ -177,7 +177,7 @@ class TestPredict:
     ):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary=primary, tau_selection=tau_selection)
-        crm2 = CRM()
+        crm2 = CRM(primary=primary, tau_selection=tau_selection)
         crm2.set_connections(
             gains=crm.gains,
             tau=crm.tau,
