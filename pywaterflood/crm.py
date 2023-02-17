@@ -298,20 +298,22 @@ class CRM:
         self.tau_producer = np.array(tau_producer)
         return self
 
-    def predict(self, injection=None, time=None, connections=None):
+    def predict(self, injection=None, time=None, connections=None, production=None):
         """Predict production for a trained model.
 
         If the injection and time are not provided, this will use the training values
 
         Args
         ----------
-        injection : NDArray
+        injection : Optional NDArray
             The injection rates to input to the system, shape (n_time, n_inj)
-        time : NDArray
+        time : Optional NDArray
             The timesteps to predict
-        connections : dict
+        connections : Optional dict
             if present, the gains, tau, gains_producer, tau_producer
             matrices
+        production : Optional NDArray
+            The production (only takes first row to use for primary production decline)
 
         Returns
         ----------
@@ -328,7 +330,8 @@ class CRM:
             tau = self.tau
             gains_producer = self.gains_producer
             tau_producer = self.tau_producer
-        production = self.production
+        if production is None:
+            production = self.production
         n_producers = production.shape[1]
 
         if int(injection is None) + int(time is None) == 1:
