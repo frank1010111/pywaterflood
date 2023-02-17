@@ -32,6 +32,16 @@ autoapi_options = [
     "special-members",
 ]
 
+
+# myst_nb configuration
+nb_execution_mode = "off"
+nb_execution_timeout = 60
+nb_output_stderr = "remove"
+myst_enable_extensions = [
+    "amsmath",
+    "dollarmath",
+]
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
