@@ -61,7 +61,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.8.3
+      - uses: pypa/gh-action-pypi-publish@v1.8.5
         with:
           # If you've already pushed this version to TestPyPI, don't fail the job
           skip-existing: true
@@ -86,7 +86,7 @@ jobs:
       - run: pipx run twine check dist/*
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.3
+        uses: pypa/gh-action-pypi-publish@v1.8.5
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
