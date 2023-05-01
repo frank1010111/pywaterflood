@@ -52,6 +52,8 @@ jobs:
   upload_testpypi:
     needs: [build, build_wheels]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write 
     steps:
       - name: get artifacts
         uses: actions/download-artifact@v3
@@ -72,6 +74,8 @@ jobs:
   upload_pypi:
     needs: [build, build_wheels]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write 
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
