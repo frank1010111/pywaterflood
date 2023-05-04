@@ -2,6 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/pywaterflood.svg)](https://badge.fury.io/py/pywaterflood)
 [![Documentation Status](https://readthedocs.org/projects/pywaterflood/badge/?version=latest)](https://pywaterflood.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/234408267.svg)](https://zenodo.org/badge/latestdoi/234408267)
 
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![codecov](https://codecov.io/gh/frank1010111/pywaterflood/branch/master/graph/badge.svg?token=3XRGLKO7T8)](https://codecov.io/gh/frank1010111/pywaterflood)
