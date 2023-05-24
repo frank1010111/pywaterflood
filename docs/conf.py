@@ -6,9 +6,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 # -- Project information -----------------------------------------------------
 project = "pywaterflood"
-copyright = "2021, Frank Male"
+copyright = f"2021-{datetime.now().year}, Frank Male"
 author = "Frank Male"
 
 # -- General configuration ---------------------------------------------------
@@ -19,8 +21,11 @@ author = "Frank Male"
 extensions = [
     "myst_nb",
     "autoapi.extension",
+    "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx_copybutton",
+    "sphinx_design",
 ]
 autoapi_dirs = ["../pywaterflood"]
 autoapi_options = [
@@ -38,6 +43,8 @@ nb_execution_mode = "off"
 nb_execution_timeout = 60
 nb_output_stderr = "remove"
 myst_enable_extensions = [
+    "colon_fence",
+    "deflist",
     "amsmath",
     "dollarmath",
 ]
@@ -52,4 +59,6 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".ipynb_checkpoints"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
+html_static_path: list[str] = []
+html_css_files = ["https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"]
