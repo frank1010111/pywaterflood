@@ -30,10 +30,13 @@ test = [
     "coverage[toml] >=6.3.3",
 ]
 docs = [
+    "furo",
     "myst-nb",
     "sphinx",
     "sphinx-autoapi",
-    "sphinx-rtd-theme",
+    "sphinx-copybutton",
+    "sphinx-design",
+    "sphinx-sitemap",
 ]
 devwork = [
     "ipykernel",
