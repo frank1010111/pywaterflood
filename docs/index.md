@@ -17,7 +17,6 @@ conduct.md
 ::::{grid-item-card}
 :columns: 12
 
-
 `pywaterflood` provides tools for capacitance resistance modeling, a
 physics-inspired model for estimating waterflood performance. It estimates the
 connectivities and time decays between injectors and producers. With pressure
