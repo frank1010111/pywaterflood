@@ -189,7 +189,8 @@ class CRM:
     References
     ----------
     "A State-of-the-Art Literature Review on Capacitance Resistance Models for
-    Reservoir Characterization and Performance Forecasting" - Holanda et al., 2018.
+    Reservoir Characterization and Performance Forecasting" - Wanderley de Holanda
+    et al., 2018. https://www.mdpi.com/1996-1073/11/12/3368
     """
 
     def __init__(
