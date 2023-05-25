@@ -2,7 +2,18 @@
 
 <!--next-version-placeholder-->
 
-## v0.2.0 (5/21/2021)
+## v0.3.0 (03/05/2023)
+
+Code improvements:
+
+- New Rust computational backend in https://github.com/frank1010111/pywaterflood/pull/25
+
+Non-code improvements:
+
+- Pre commit changes by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/27
+- :hammer: :bug: update pandas version to fix numpy incompatiblility
+
+## v0.2.0 (21/05/2022)
 
 ### Features
 
