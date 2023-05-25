@@ -8,7 +8,6 @@ You can install pywaterflood with
 pip install pywaterflood
 ```
 
-
 ## Running pywaterflood
 
 First, import `pandas` and `pywaterflood`'s CRM module.
@@ -32,7 +31,7 @@ time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
 Finally, run CRM and check the predictions and residuals.
 
 ```python
-crm = CRM(tau_selection="per-pair", constraints="up-to one")
+crm = CRM()
 crm.fit(prod, inj, time)
 q_hat = crm.predict()
 residuals = crm.residual()
