@@ -7,4 +7,5 @@ New users should start with {doc}`7-minutes-to-pywaterflood`.
 ```{toctree}
 :maxdepth: 1
 7-minutes-to-pywaterflood.ipynb
+choosing-crm.ipynb
 ```
