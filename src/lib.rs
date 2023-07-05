@@ -1,10 +1,16 @@
 // library
 
+pub mod buckleyleverett;
+
 use std::f64::consts::PI;
 
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
 use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
+
+pub use crate::buckleyleverett::{
+    fractional_flow_water_flat, k_rel_oil, k_rel_water, water_front_velocity,
+};
 
 #[pymodule]
 fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -156,6 +162,111 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
     ) -> f64 {
         let m = m.as_array();
         calc_a_ij(x_i, y_i, x_j, y_j, y_d, m)
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "water_front_velocity")]
+    /// Front velocity
+    ///
+    /// $$\begin{equation}
+    /// \left(\frac{dx}{dt}\right)_{S_w} = \frac{q_t}{\phi A} \left(\frac{\partial f_w}{\partial S_w}\right)_t
+    /// \end{equation}$$
+    fn water_front_velocity_py(
+        flow_t: f64,
+        phi: f64,
+        flow_cross_section: f64,
+        viscosity_oil: f64,
+        viscosity_water: f64,
+        sat_oil: f64,
+        sat_water: f64,
+        sat_oil_r: f64,
+        sat_water_c: f64,
+        sat_gas_c: f64,
+        n_oil: f64,
+        n_water: f64,
+    ) -> PyResult<f64> {
+        Ok(water_front_velocity(
+            flow_t,
+            phi,
+            flow_cross_section,
+            viscosity_oil,
+            viscosity_water,
+            sat_oil,
+            sat_water,
+            sat_oil_r,
+            sat_water_c,
+            sat_gas_c,
+            n_oil,
+            n_water,
+        ))
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "fractional_flow_water")]
+    /// Water fractional flow for an unangled (flat) reservoir
+    ///
+    /// $$\begin{equation}
+    /// f_w = \frac{1}{1 + \frac{k_o}{k_w}\frac{\mu_w}{\mu_o}}
+    /// \end{equation}$$
+    ///
+    /// # Arguments
+    /// * k_oil: relative permeability to oil
+    /// * k_water: relative permeability to water
+    /// * viscosity_water: water viscosity in Pa.s
+    fn fractional_flow_water_py(
+        k_oil: f64,
+        k_water: f64,
+        viscosity_oil: f64,
+        viscosity_water: f64,
+    ) -> PyResult<f64> {
+        Ok(fractional_flow_water_flat(
+            k_oil,
+            k_water,
+            viscosity_oil,
+            viscosity_water,
+        ))
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "k_rel_oil")]
+    /// Relative permeability for water following Brooks-Corey
+    ///
+    /// $$\begin{equation}
+    /// k_{ro} = \left(\frac{S_o- S_{or}}{1 - S_{or} - S_{wc}- S_{gc}}\right)^{n_o}
+    /// \end{equation}$$
+    ///
+    fn k_rel_oil_py(
+        sat_oil: f64,
+        sat_oil_r: f64,
+        sat_water_c: f64,
+        sat_gas_c: f64,
+        n_oil: f64,
+    ) -> PyResult<f64> {
+        Ok(k_rel_oil(sat_oil, sat_oil_r, sat_water_c, sat_gas_c, n_oil))
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "k_rel_water")]
+    /// Relative permeability for water following Brooks-Corey
+    ///
+    /// $$\begin{equation}
+    /// k_{rw} = \left(\frac{S_w- S_{wc}}{1 - S_{or} - S_{wc}- S_{gc}}\right)^{n_o}
+    /// \end{equation}$$
+    ///
+    fn k_rel_water_py(
+        sat_water: f64,
+        sat_oil_r: f64,
+        sat_water_c: f64,
+        sat_gas_c: f64,
+        n_water: f64,
+    ) -> PyResult<f64> {
+        Ok(k_rel_water(
+            sat_water,
+            sat_oil_r,
+            sat_water_c,
+            sat_gas_c,
+            n_water,
+        ))
     }
 
     Ok(())
