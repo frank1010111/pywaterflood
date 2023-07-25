@@ -8,4 +8,5 @@ New users should start with {doc}`7-minutes-to-pywaterflood`.
 :maxdepth: 1
 7-minutes-to-pywaterflood.ipynb
 choosing-crm.ipynb
+multiwell-productivity-index.ipynb
 ```
