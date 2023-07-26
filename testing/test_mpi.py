@@ -37,7 +37,9 @@ def test_translate(locations):
 
 
 def test_Aij():
-    "From the worked example by Kaviani and Valkó"
+    """From the worked example by Valkó et al, 2000.
+
+    Development and Application of the Multiwell Productivity Index (MPI)"""
     m = 1 + np.arange(300, dtype="uint64")
     results = calc_A_ij(0.233351184, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
     assert pytest.approx(10.6867, abs=0.01) == results
@@ -68,6 +70,7 @@ def test_influence_matrix(locations):
         calc_influence_matrix(locations, y_D=0.7, matrix_type="wrong")
 
 
+# for regression testing
 def calc_A_ij_old(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: NDArray) -> float:
     r"""Calculate element in the influence matrix.
 
