@@ -13,7 +13,14 @@ idx = pd.IndexSlice
 
 
 def calc_gains_homogeneous(locations: pd.DataFrame, x_e: float, y_e: float) -> pd.DataFrame:
-    """Calculate gains from injectors to producers using multiwell productivity index.
+    r"""Calculate gains from injectors to producers using multiwell productivity index.
+
+    The equation for the influence of injection on production is
+
+    .. math::
+        \mathbf{\Lambda} = \frac{\mathbf{A}_p^{-1}}{\sum \mathbf{A}_p^{-1}}
+            \times \left(\mathbf{1} \times \mathbf{A}_p^{-1} \times \mathbf{A}_c^T - 1\right)
+            - \left( \mathbf{A}_p^{-1} \times \mathbf{A}_c^T \right)
 
     Args
     ----------
@@ -48,10 +55,10 @@ def calc_gains_homogeneous(locations: pd.DataFrame, x_e: float, y_e: float) -> p
     y_D = y_e / x_e
     A_prod = calc_influence_matrix(locations, y_D, "prod").astype(float)
     A_conn = calc_influence_matrix(locations, y_D, "conn").astype(float)
-    A_prod_inv = sl.inv(A_prod.values)
+    A_prod_inv = sl.inv(A_prod.to_numpy())
     term1 = A_prod_inv / np.sum(A_prod_inv)
-    term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.values - 1
-    term3 = A_prod_inv @ A_conn.values
+    term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.to_numpy().T - 1
+    term3 = A_prod_inv @ A_conn.to_numpy().T
     Lambda = term1 @ term2 - term3
     connectivity_df = pd.DataFrame(Lambda, index=A_prod.index, columns=A_conn.columns)
     return connectivity_df.rename_axis(index="Producers", columns="Injectors")
