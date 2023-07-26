@@ -44,6 +44,9 @@ def calc_gains_homogeneous(locations: pd.DataFrame, x_e: float, y_e: float) -> p
     This assumes a roughly rectangular unit with major axes at x and y. You might want
     to rotate your locations.
 
+    Lambda is negative. Not sure why. Negate it to get positive injection leading to
+    positive production.
+
     References
     ----------
     Kaviani, D. and Valkó, P.P., 2010. Inferring interwell connectivity using \
@@ -53,12 +56,12 @@ def calc_gains_homogeneous(locations: pd.DataFrame, x_e: float, y_e: float) -> p
     locations = locations.copy()
     locations[["X", "Y"]] /= x_e
     y_D = y_e / x_e
-    A_prod = calc_influence_matrix(locations, y_D, "prod").astype(float)
-    A_conn = calc_influence_matrix(locations, y_D, "conn").astype(float)
+    A_prod = calc_influence_matrix(locations, y_D, "prod")
+    A_conn = calc_influence_matrix(locations, y_D, "conn")
     A_prod_inv = sl.inv(A_prod.to_numpy())
     term1 = A_prod_inv / np.sum(A_prod_inv)
-    term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.to_numpy().T - 1
-    term3 = A_prod_inv @ A_conn.to_numpy().T
+    term2 = np.ones_like(A_prod_inv) @ A_prod_inv @ A_conn.to_numpy() - 1
+    term3 = A_prod_inv @ A_conn.to_numpy()
     Lambda = term1 @ term2 - term3
     connectivity_df = pd.DataFrame(Lambda, index=A_prod.index, columns=A_conn.columns)
     return connectivity_df.rename_axis(index="Producers", columns="Injectors")
@@ -96,7 +99,7 @@ def translate_locations(
 
 
 def calc_influence_matrix(
-    locations: pd.DataFrame, y_D: float, matrix_type: str = "conn", m_max: int = 300
+    locations: pd.DataFrame, y_D: float, matrix_type: str = "conn", m_max: int = 100
 ) -> pd.DataFrame:
     """Calculate influence matrix A.
 
@@ -110,7 +113,7 @@ def calc_influence_matrix(
     matrix_type : str, choice of `conn` or `prod`
         injector-producer matrix or producer-producer matrix
     m_max : int > 0
-        number of terms in the series to calculate. 300 is a good default.
+        number of terms in the series to calculate. 100 is a good default.
 
     Returns
     -------
@@ -130,7 +133,7 @@ def calc_influence_matrix(
         x_i, y_i = XA.loc[i, ["X", "Y"]]
         x_j, y_j = XB.loc[j, ["X", "Y"]] + 1e-6
         influence_matrix.loc[idx[i, j], "A"] = calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
-    return influence_matrix["A"].astype(float).unstack()
+    return influence_matrix["A"].unstack().astype("float64")
 
 
 def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray) -> float:
