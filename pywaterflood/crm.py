@@ -200,7 +200,7 @@ class CRM:
         constraints: str = "positive",
     ):
         """Initialize CRM with appropriate settings."""
-        if type(primary) != bool:
+        if not isinstance(primary, bool):
             msg = "primary must be a boolean"
             raise TypeError(msg)
         self.primary = primary
@@ -433,7 +433,7 @@ class CRM:
 
         """
         for x in ("gains", "tau", "gains_producer", "tau_producer"):
-            if x not in self.__dict__.keys():
+            if x not in self.__dict__:
                 msg = "Model has not been trained"
                 raise ValueError(msg)
         with pd.ExcelWriter(fname) as f:
@@ -510,7 +510,7 @@ class CRM:
             ]
         else:
             x0 = [np.concatenate([gains_guess1[i, :], tau_guess1[i, :]]) for i in range(n_prod)]
-        return x0  # noqa: 504
+        return x0
 
     def _opt_numbers(self) -> tuple[int, int, int]:
         """Return the number of gains, taus, and primary production parameters to fit."""
@@ -547,7 +547,7 @@ class CRM:
         elif self.constraints == "sum-to-one injector":
             msg = "sum-to-one injector is not implemented"
             raise NotImplementedError(msg)
-        else:  # noqa: RET506
+        else:
             bounds = ((0, np.inf),) * n
             constraints_optimizer = ()
         return bounds, constraints_optimizer
