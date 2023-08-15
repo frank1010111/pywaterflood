@@ -169,5 +169,17 @@ def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: nda
     Returns
     -------
     A_ij : float
+
+    See also
+    --------
+    Kaviani and Valkó: https://doi.org/10.1016/j.petrol.2010.05.006
     """
-    return pwf.calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
+    # Symmetry properties, see https://doi.org/10.1016/j.petrol.2010.05.006, A5-A6
+    y_eD = y_D
+    x_D = max([x_i, x_j])
+    y_D = max([y_i, y_j])
+    x_wD = min([x_i, x_j])
+    y_wD = min([y_i, y_j])
+    if not ((x_D - x_wD) > (y_D - y_wD)):
+        y_eD = 1.0 / y_eD
+    return pwf.calc_A_ij(x_D, y_D, x_wD, y_wD, y_eD, m)
