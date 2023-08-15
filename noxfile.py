@@ -1,6 +1,7 @@
 """Nox sessions for linting, docs, and testing."""
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -60,3 +61,22 @@ def build(session: nox.Session) -> None:
 
     session.install("build")
     session.run("python", "-m", "build", "-o", "build")
+
+
+@nox.session
+def paper(session: nox.Sesson) -> None:
+    """Build the JOSS paper draft."""
+    paper_dir = DIR.joinpath("paper")
+    session.run(
+        "docker",
+        "run",
+        "--rm",
+        "--volume",
+        f"{paper_dir}:/data",
+        "--user",
+        f"{os.getuid()}:{os.getgid()}",
+        "--env",
+        "JOURNAL=joss",
+        "openjournals/inara",
+        external=True,
+    )
