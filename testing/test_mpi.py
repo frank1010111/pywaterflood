@@ -49,6 +49,23 @@ def test_Aij():
         assert pytest.approx(old_A_ij, 1e-3) == rust_A_ij
 
 
+def test_Aij_symmetry():
+    idx = pd.IndexSlice
+    m_max = 100
+    locations = pd.DataFrame({"X": [0.2, 0.8], "Y": [0.3, 0.7]})
+    y_D = 1.1
+    influence_matrix = pd.DataFrame(
+        index=pd.MultiIndex.from_product([locations.index, locations.index]), columns=["A"]
+    )
+    m = np.arange(1, m_max + 1, dtype="uint64")  # elements of sum
+    for i, j in influence_matrix.index:
+        x_i, y_i = locations.loc[i, ["X", "Y"]]
+        x_j, y_j = locations.loc[j, ["X", "Y"]] + 1e-6
+        influence_matrix.loc[idx[i, j], "A"] = calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
+    influence_matrix = influence_matrix["A"].unstack().astype("float64")
+    assert pytest.approx(influence_matrix.iloc[0, 1], 1e-4) == influence_matrix.iloc[1, 0]
+
+
 def test_calc_gains(locations):
     """See that calc_gains works."""
     x_e = 34
