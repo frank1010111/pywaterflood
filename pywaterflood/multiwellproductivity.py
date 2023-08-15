@@ -170,9 +170,11 @@ def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: nda
     -------
     A_ij : float
 
-    See also
-    --------
-    Kaviani and Valkó: https://doi.org/10.1016/j.petrol.2010.05.006
+    References
+    ----------
+    Kaviani, D. and Valkó, P.P., 2010. Inferring interwell connectivity using \
+    multiwell productivity index (MPI). Journal of Petroleum Science and Engineering, \
+    73(1-2), p.48-58. https://doi.org/10.1016/j.petrol.2010.05.006
     """
     # Symmetry properties, see https://doi.org/10.1016/j.petrol.2010.05.006, A5-A6
     y_eD = y_D
