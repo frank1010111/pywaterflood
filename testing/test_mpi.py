@@ -106,6 +106,10 @@ def calc_A_ij_old(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m:
     -------
     A_ij : float
     """
+    y_j, y_i = sorted([y_i, y_j])
+    x_j, x_i = sorted([x_i, x_j])
+    if not ((x_i - x_j) > (y_i - y_j)):
+        y_D = 1 / y_D
     first_term = 2 * np.pi * y_D * (1 / 3.0 - y_i / y_D + (y_i**2 + y_j**2) / (2 * y_D**2))
 
     tm = (
