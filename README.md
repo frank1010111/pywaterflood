@@ -11,8 +11,9 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/pywaterflood)](https://pypi.org/project/pywaterflood/)
 
 `pywaterflood` provides tools for capacitance resistance modeling, a
-physics-inspired model for estimating waterflood performance. It estimates the
-connectivities and time decays between injectors and producers.
+physics-inspired model for estimating well connectivity between injectors and
+producers or producers and other producers. It is useful for analyzing and
+optimizing waterfloods, CO<sub>2</sub> floods, and geothermal projects.
 
 ## Overview
 
@@ -43,6 +44,10 @@ You can install this package from PyPI with the line
 pip install pywaterflood
 ```
 
+Then, [read the docs](https://pywaterflood.readthedocs.io/) to learn more. If you
+want to try it out online before installing it on your computer, you can run
+[this google colab notebook](https://colab.research.google.com/github/frank1010111/pywaterflood/blob/master/docs/user-guide/7-minutes-to-pywaterflood.ipynb).
+
 ### A simple example
 
     import pandas as pd
@@ -57,3 +62,14 @@ pip install pywaterflood
     crm.fit(prod, inj, time)
     q_hat = crm.predict()
     residuals = crm.residual()
+
+## Contributing
+
+Contributions are extremely welcome! Have [an issue to report](https://github.com/frank1010111/bluebonnet/issues/new)?
+Want to offer new features or documentation? Check out the [contribution guide](https://github.com/frank1010111/pywaterflood/blob/master/CONTRIBUTING.md)
+to help you set up. Discussions could start anytime at
+[the discussions section](https://github.com/frank1010111/pywaterflood/discussions).
+
+`pywaterflood` uses Rust for computation and python as the high level interface.
+Luckily, [maturin](https://www.maturin.rs/) is a very convenient tool for working
+with mixed Python-Rust projects.
