@@ -73,3 +73,18 @@ to help you set up. Discussions could start anytime at
 `pywaterflood` uses Rust for computation and python as the high level interface.
 Luckily, [maturin](https://www.maturin.rs/) is a very convenient tool for working
 with mixed Python-Rust projects.
+
+## License
+
+This software library is released under a BSD 2-Clause License.
+
+## Acknowledgments
+
+Capacitance resistance modeling would not have caught on without the persistence
+of two professors: Larry Lake and Jerry Jensen. Both of these gentlemen generously
+helped answer questions in the development of this library. Research funding for
+this project came from the Department of Energy grant "Optimizing Sweep based on
+Geochemical and Reservoir Characterization of the Residual Oil Zone of Hess Seminole
+Unit" (PI: Ian Duncan) and the State of Texas Advanced Resource Recovery program
+(PI: William Ambrose). Further development is supported by Penn State faculty
+promotion funds and volunteer time.
