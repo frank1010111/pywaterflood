@@ -39,7 +39,7 @@ The `pywaterflood` library can perform the following tasks:
 
 # Acknowledgements
 
-I am thankful for Jerry Jensen and Larry Lake for their mentorship, introduction to Capacitance-Resistance modeling, and presentation of several interesting problems for CRM. Ian Duncan was responsible for useful discussions and further problems to apply CRM to. Danial Kaviani provided advice for the MPI submodule. Software development funding was provided by the State of Texas Advanced Resource Recovery program and by Pennsylvania State University faculty startup funds.
+I am thankful for Jerry Jensen and Larry Lake for their mentorship, introduction to Capacitance-Resistance modeling, and presentation of several interesting problems for CRM. Ian Duncan was responsible for useful discussions and further problems to apply CRM to. Danial Kaviani provided advice for the MPI submodule. Software development funding was provided by the Department of Energy grant "Optimizing Sweep based on Geochemical and Reservoir Characterization of the Residual Oil Zone of Hess Seminole Unit" (Principal investigator: Ian Ducan), the State of Texas Advanced Resource Recovery program (PI: William Ambrose, then Lorena Moscardelli), and by Pennsylvania State University faculty funds.
 
 This project relies on the following open-source Python packages: NumPy
 [@numpy2011; @numpy2020], SciPy [@scipy2020], and
