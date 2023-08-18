@@ -29,6 +29,9 @@ pub const EPSILON: f64 = 5.0e-7;
 /// * sat_gas_c: critical gas saturation
 /// * n_oil: Brooks-Corey exponent for oil rel-perm
 /// * n_water: Brooks-Corey exponent for water rel-perm
+///
+/// # Returns
+/// the front velocity in m/d
 pub fn water_front_velocity(
     flow_rate: f64,
     phi: f64,
@@ -144,9 +147,7 @@ pub fn breakthrough_sw(
 
 /// Water fractional flow for an unangled (flat) reservoir
 ///
-/// $$\begin{equation}
-/// f_w = \frac{1}{1 + \frac{k_o}{k_w}\frac{\mu_w}{\mu_o}}
-/// \end{equation}$$
+/// $$f_w = \frac{1}{1 + \frac{k_o}{k_w}\frac{\mu_w}{\mu_o}}$$
 ///
 /// # Arguments
 /// * k_oil: relative permeability to oil
@@ -199,10 +200,16 @@ pub fn fractional_flow_water_angled(
 
 /// Relative permeability for oil following Brooks-Corey
 ///
-///
 /// $$\begin{equation}
 /// k_{ro} = \left(\frac{S_o- S_{or}}{1 - S_{or} - S_{wc}- S_{gc}}\right)^{n_o}
 /// \end{equation}$$
+///
+/// # Arguments
+/// * sat_oil: oil saturation
+/// * sat_oil_r: residual oil saturation
+/// * sat_water_c: critical (residual) water saturation
+/// * sat_gas_c: critical gas saturation
+/// * n_oil: Brooks-Corey exponent for oil rel-perm
 ///
 pub fn k_rel_oil(
     sat_oil: f64,
@@ -224,6 +231,13 @@ pub fn k_rel_oil(
 /// k_{rw} = \left(\frac{S_w- S_{wc}}{1 - S_{or} - S_{wc}- S_{gc}}\right)^{n_o}
 /// \end{equation}$$
 ///
+/// # Arguments
+/// * sat_water: water saturation
+/// * sat_oil_r: residual oil saturation
+/// * sat_water_c: critical (residual) water saturation
+/// * sat_gas_c: critical gas saturation
+/// * n_water: Brooks-Corey exponent for water rel-perm
+///
 pub fn k_rel_water(
     sat_water: f64,
     sat_oil_r: f64,
@@ -243,6 +257,13 @@ pub fn k_rel_water(
 /// $$\begin{equation}
 /// k_{rw} = \left(\frac{S_g- S_{gc}}{1 - S_{or} - S_{wc}- S_{gc}}\right)^{n_o}
 /// \end{equation}$$
+///
+/// # Arguments
+/// * sat_gas: free gas saturation
+/// * sat_oil_r: residual oil saturation
+/// * sat_water_c: critical (residual) water saturation
+/// * sat_gas_c: critical gas saturation
+/// * n_gas: Brooks-Corey exponent for gas rel-perm
 ///
 pub fn k_rel_gas(
     sat_gas: f64,

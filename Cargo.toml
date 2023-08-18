@@ -13,3 +13,6 @@ crate-type = ["cdylib"]
 ndarray = "0.15.6"
 numpy = "0.16.2"
 pyo3 = { version = "0.16", features = ["extension-module", "abi3-py37"] }
+
+[build]
+rustdoc-args = [ "--html-in-header", "./docs/rust_header.html" , "--no-deps"]
