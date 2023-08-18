@@ -22,6 +22,7 @@ pub fn water_front_velocity(
 ) -> f64 {
     let flow_constant = flow_t / (phi * flow_cross_section);
     let k_rel_oil_high = k_rel_oil(sat_oil + EPSILON, sat_oil_r, sat_water_c, sat_gas_c, n_oil);
+    let k_rel_oil_low = k_rel_oil(sat_oil - EPSILON, sat_oil_r, sat_water_c, sat_gas_c, n_oil);
     let k_rel_water_high = k_rel_water(
         sat_water + EPSILON,
         sat_oil_r,
@@ -29,13 +30,6 @@ pub fn water_front_velocity(
         sat_gas_c,
         n_water,
     );
-    let fractional_flow_high = fractional_flow_water_flat(
-        k_rel_oil_high,
-        k_rel_water_high,
-        viscosity_oil,
-        viscosity_water,
-    );
-    let k_rel_oil_low = k_rel_oil(sat_oil - EPSILON, sat_oil_r, sat_water_c, sat_gas_c, n_oil);
     let k_rel_water_low = k_rel_water(
         sat_water - EPSILON,
         sat_oil_r,
@@ -43,8 +37,14 @@ pub fn water_front_velocity(
         sat_gas_c,
         n_water,
     );
-    let fractional_flow_low = fractional_flow_water_flat(
+    let fractional_flow_high = fractional_flow_water_flat(
         k_rel_oil_low,
+        k_rel_water_high,
+        viscosity_oil,
+        viscosity_water,
+    );
+    let fractional_flow_low = fractional_flow_water_flat(
+        k_rel_oil_high,
         k_rel_water_low,
         viscosity_oil,
         viscosity_water,
@@ -110,7 +110,7 @@ pub fn fractional_flow_water_angled(
         / (1.0 + k_oil * viscosity_water / (k_water * viscosity_oil))
 }
 
-/// Relative permeability for water following Brooks-Corey
+/// Relative permeability for oil following Brooks-Corey
 ///
 ///
 /// $$\begin{equation}
@@ -124,6 +124,9 @@ pub fn k_rel_oil(
     sat_gas_c: f64,
     n_oil: f64,
 ) -> f64 {
+    if sat_oil < sat_oil_r {
+        return 0.0;
+    }
     ((sat_oil - sat_oil_r) / (1f64 - sat_oil_r - sat_water_c - sat_gas_c)).powf(n_oil)
 }
 
@@ -141,5 +144,28 @@ pub fn k_rel_water(
     sat_gas_c: f64,
     n_water: f64,
 ) -> f64 {
+    if sat_water < sat_water_c {
+        return 0.0;
+    }
     ((sat_water - sat_water_c) / (1f64 - sat_oil_r - sat_water_c - sat_gas_c)).powf(n_water)
+}
+
+/// Relative permeability for gas following Brooks-Corey
+///
+///
+/// $$\begin{equation}
+/// k_{rw} = \left(\frac{S_g- S_{gc}}{1 - S_{or} - S_{wc}- S_{gc}}\right)^{n_o}
+/// \end{equation}$$
+///
+pub fn k_rel_gas(
+    sat_gas: f64,
+    sat_oil_r: f64,
+    sat_water_c: f64,
+    sat_gas_c: f64,
+    n_gas: f64,
+) -> f64 {
+    if sat_gas < sat_gas_c {
+        return 0.0;
+    }
+    ((sat_gas - sat_gas_c) / (1f64 - sat_oil_r - sat_water_c - sat_gas_c)).powf(n_gas)
 }
