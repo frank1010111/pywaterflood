@@ -9,7 +9,7 @@ use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 
 pub use crate::buckleyleverett::{
-    fractional_flow_water_flat, k_rel_oil, k_rel_water, water_front_velocity,
+    breakthrough_sw, fractional_flow_water_flat, k_rel_oil, k_rel_water, water_front_velocity,
 };
 
 #[pymodule]
@@ -193,6 +193,33 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
             viscosity_water,
             sat_oil,
             sat_water,
+            sat_oil_r,
+            sat_water_c,
+            sat_gas_c,
+            n_oil,
+            n_water,
+        ))
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "breakthrough_sw")]
+    /// Water saturation at breakthrough
+    ///
+    /// Find through checking the water front velocity at different saturations
+    /// until the tangent line from 0 velocity and residual water saturation is
+    /// maximized
+    fn breakthrough_sw_py(
+        viscosity_oil: f64,
+        viscosity_water: f64,
+        sat_oil_r: f64,
+        sat_water_c: f64,
+        sat_gas_c: f64,
+        n_oil: f64,
+        n_water: f64,
+    ) -> PyResult<f64> {
+        Ok(breakthrough_sw(
+            viscosity_oil,
+            viscosity_water,
             sat_oil_r,
             sat_water_c,
             sat_gas_c,

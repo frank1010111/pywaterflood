@@ -1,13 +1,36 @@
+// Buckley-Leverett calculations
+
+use ndarray::Array1;
+
 /// The value used for `h` in derivative estimates.
 pub const EPSILON: f64 = 5.0e-7;
 
-/// Front velocity
+/// Front velocity in m/d
+///
+/// Above the breakthrough saturation follows this equation:
 ///
 /// $$\begin{equation}
 /// \left(\frac{dx}{dt}\right)_{S_w} = \frac{q_t}{\phi A} \left(\frac{\partial f_w}{\partial S_w}\right)_t
 /// \end{equation}$$
+///
+/// Below the breakthrough saturation, the velocity is equal to the velocity for the equation
+/// at breakthrough saturation.
+///
+/// # Arguments
+/// * flow_rate: water flow rate in m^3/d
+/// * phi: effective porosity
+/// * flow_cross_section: Area flow is through in m^2
+/// * viscosity_oil: oil viscosity in Pa.s
+/// * viscosity_water: water viscosity in Pa.s
+/// * sat_oil: relative permeability to oil
+/// * sat_water: relative permeability to water
+/// * sat_oil_r: residual oil saturation
+/// * sat_water_c: critical (residual) water saturation
+/// * sat_gas_c: critical gas saturation
+/// * n_oil: Brooks-Corey exponent for oil rel-perm
+/// * n_water: Brooks-Corey exponent for water rel-perm
 pub fn water_front_velocity(
-    flow_t: f64,
+    flow_rate: f64,
     phi: f64,
     flow_cross_section: f64,
     viscosity_oil: f64,
@@ -20,7 +43,35 @@ pub fn water_front_velocity(
     n_oil: f64,
     n_water: f64,
 ) -> f64 {
-    let flow_constant = flow_t / (phi * flow_cross_section);
+    if sat_water < sat_water_c {
+        return 0.0;
+    }
+    let sat_wb = breakthrough_sw(
+        viscosity_oil,
+        viscosity_water,
+        sat_oil_r,
+        sat_water_c,
+        sat_gas_c,
+        n_oil,
+        n_water,
+    );
+    if sat_water < sat_wb {
+        return water_front_velocity(
+            flow_rate,
+            phi,
+            flow_cross_section,
+            viscosity_oil,
+            viscosity_water,
+            1.0 - sat_wb,
+            sat_wb,
+            sat_oil_r,
+            sat_water_c,
+            sat_gas_c,
+            n_oil,
+            n_water,
+        );
+    }
+    let flow_constant = flow_rate / (phi * flow_cross_section);
     let k_rel_oil_high = k_rel_oil(sat_oil + EPSILON, sat_oil_r, sat_water_c, sat_gas_c, n_oil);
     let k_rel_oil_low = k_rel_oil(sat_oil - EPSILON, sat_oil_r, sat_water_c, sat_gas_c, n_oil);
     let k_rel_water_high = k_rel_water(
@@ -53,6 +104,42 @@ pub fn water_front_velocity(
     let d_fractional_flow_d_saturation =
         (fractional_flow_high - fractional_flow_low) / (2_f64 * EPSILON);
     flow_constant * d_fractional_flow_d_saturation
+}
+
+/// Water saturation at breakthrough
+///
+/// # Arguments
+/// * viscosity_oil: oil viscosity in Pa.s
+/// * viscosity_water: water viscosity in Pa.s
+/// * sat_oil_r: residual oil saturation
+/// * sat_water_c: critical (residual) water saturation
+/// * sat_gas_c: critical gas saturation
+/// * n_oil: Brooks-Corey exponent for oil rel-perm
+/// * n_water: Brooks-Corey exponent for water rel-perm
+pub fn breakthrough_sw(
+    viscosity_oil: f64,
+    viscosity_water: f64,
+    sat_oil_r: f64,
+    sat_water_c: f64,
+    sat_gas_c: f64,
+    n_oil: f64,
+    n_water: f64,
+) -> f64 {
+    let s_w = Array1::range(sat_water_c, 1.0 - sat_oil_r.min(sat_gas_c), 0.005);
+    let tangent_frac_flow_water = s_w.map(|&sat_water| {
+        let k_oil = k_rel_oil(1.0 - sat_water, sat_oil_r, sat_water_c, sat_gas_c, n_oil);
+        let k_water = k_rel_water(sat_water, sat_oil_r, sat_water_c, sat_gas_c, n_water);
+        let frac_flow_water =
+            fractional_flow_water_flat(k_oil, k_water, viscosity_oil, viscosity_water);
+        frac_flow_water / (sat_water - sat_water_c)
+    });
+    let index_of_max_tanget = tangent_frac_flow_water
+        .iter()
+        .enumerate()
+        .max_by(|(_, a), (_, b)| a.total_cmp(b))
+        .map(|(index, _)| index)
+        .unwrap();
+    s_w[index_of_max_tanget]
 }
 
 /// Water fractional flow for an unangled (flat) reservoir
