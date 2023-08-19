@@ -65,14 +65,14 @@ def test_q_primary(reservoir_simulation_data):
 def test_q_perpair(reservoir_simulation_data):
     "Secondary production."
     injection, production, time = reservoir_simulation_data
-    _, nprod = production.shape
-    _, ninj = injection.shape
-    gains = random_weights(nprod, ninj, seed=42)
+    _, n_prod = production.shape
+    _, n_inj = injection.shape
+    gains = random_weights(n_prod, n_inj, seed=42)
     rng = np.random.default_rng(42)
     taus = rng.uniform(1, 40, gains.shape)
     q_1 = np.empty_like(production)
     q_2 = np.empty_like(production)
-    for i in range(nprod):
+    for i in range(n_prod):
         q_1[:, i] = q_CRM_perpair(injection, time, gains[i], taus[i])
         q_2[:, i] = q_CRM_perpair(injection, time, 0.5 * gains[i], taus[i])
     assert not np.isnan(q_1).flatten().any(), "No NaNs"
@@ -83,14 +83,14 @@ def test_q_perpair(reservoir_simulation_data):
 def test_q_perproducer(reservoir_simulation_data):
     "Secondary production."
     injection, production, time = reservoir_simulation_data
-    _, nprod = production.shape
-    _, ninj = injection.shape
-    gains = random_weights(nprod, ninj, seed=42)
+    _, n_prod = production.shape
+    _, n_inj = injection.shape
+    gains = random_weights(n_prod, n_inj, seed=42)
     rng = np.random.default_rng(42)
-    taus = rng.uniform(1, 40, nprod)
+    taus = rng.uniform(1, 40, n_prod)
     q_1 = np.empty_like(production)
     q_2 = np.empty_like(production)
-    for i in range(nprod):
+    for i in range(n_prod):
         q_1[:, i] = q_CRM_perproducer(injection, time, gains[i], taus[i])
         q_2[:, i] = q_CRM_perproducer(injection, time, 0.5 * gains[i], taus[i])
     assert not np.isnan(q_1).flatten().any(), "No NaNs"

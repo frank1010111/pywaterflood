@@ -37,7 +37,9 @@ def test_translate(locations):
 
 
 def test_Aij():
-    "From the worked example by Kaviani and Valkó"
+    """From the worked example by Valkó et al, 2000.
+
+    Development and Application of the Multiwell Productivity Index (MPI)"""
     m = 1 + np.arange(300, dtype="uint64")
     results = calc_A_ij(0.233351184, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
     assert pytest.approx(10.6867, abs=0.01) == results
@@ -45,6 +47,23 @@ def test_Aij():
         old_A_ij = calc_A_ij_old(x_i, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
         rust_A_ij = calc_A_ij(x_i, 0.36666667, 0.23333333, 0.36666667, 0.5, m)
         assert pytest.approx(old_A_ij, 1e-3) == rust_A_ij
+
+
+def test_Aij_symmetry():
+    idx = pd.IndexSlice
+    m_max = 100
+    locations = pd.DataFrame({"X": [0.2, 0.8], "Y": [0.3, 0.7]})
+    y_D = 1.1
+    influence_matrix = pd.DataFrame(
+        index=pd.MultiIndex.from_product([locations.index, locations.index]), columns=["A"]
+    )
+    m = np.arange(1, m_max + 1, dtype="uint64")  # elements of sum
+    for i, j in influence_matrix.index:
+        x_i, y_i = locations.loc[i, ["X", "Y"]]
+        x_j, y_j = locations.loc[j, ["X", "Y"]] + 1e-6
+        influence_matrix.loc[idx[i, j], "A"] = calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
+    influence_matrix = influence_matrix["A"].unstack().astype("float64")
+    assert pytest.approx(influence_matrix.iloc[0, 1], 1e-4) == influence_matrix.iloc[1, 0]
 
 
 def test_calc_gains(locations):
@@ -68,6 +87,7 @@ def test_influence_matrix(locations):
         calc_influence_matrix(locations, y_D=0.7, matrix_type="wrong")
 
 
+# for regression testing
 def calc_A_ij_old(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: NDArray) -> float:
     r"""Calculate element in the influence matrix.
 
@@ -103,6 +123,10 @@ def calc_A_ij_old(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m:
     -------
     A_ij : float
     """
+    y_j, y_i = sorted([y_i, y_j])
+    x_j, x_i = sorted([x_i, x_j])
+    if not ((x_i - x_j) > (y_i - y_j)):
+        y_D = 1 / y_D
     first_term = 2 * np.pi * y_D * (1 / 3.0 - y_i / y_D + (y_i**2 + y_j**2) / (2 * y_D**2))
 
     tm = (
