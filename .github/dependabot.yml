@@ -9,3 +9,13 @@ updates:
       # Official actions have moving tags like v1
       # that are used, so they don't need updates here
       - dependency-name: "actions/*"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  - package-ecoystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "monthly"
