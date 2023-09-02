@@ -172,7 +172,7 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
     /// \left(\frac{dx}{dt}\right)_{S_w} = \frac{q_t}{\phi A} \left(\frac{\partial f_w}{\partial S_w}\right)_t
     /// \end{equation}$$
     fn water_front_velocity_py(
-        flow_t: f64,
+        flow_rate: f64,
         phi: f64,
         flow_cross_section: f64,
         viscosity_oil: f64,
@@ -186,7 +186,7 @@ fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
         n_water: f64,
     ) -> PyResult<f64> {
         Ok(water_front_velocity(
-            flow_t,
+            flow_rate,
             phi,
             flow_cross_section,
             viscosity_oil,
