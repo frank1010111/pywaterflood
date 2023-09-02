@@ -19,8 +19,6 @@ import pywaterflood.pywaterflood as pwf
 class Reservoir:
     phi: float
     """effective porosity"""
-    flow_cross_section: float
-    """Area flow is through in m^2"""
     viscosity_oil: float
     """oil viscosity in Pa.s"""
     viscosity_water: float
@@ -35,6 +33,8 @@ class Reservoir:
     """Brooks-Corey exponent for oil rel-perm"""
     n_water: float
     """Brooks-Corey exponent for water rel-perm"""
+    flow_cross_section: float = 1.0
+    """Area flow is through in m^2, defaults to 1"""
 
     def __post_init__(self):
         """Validate inputs after initialization."""
