@@ -10,7 +10,7 @@ updates:
       # that are used, so they don't need updates here
       - dependency-name: "actions/*"
 
-  - package-ecoystem: "cargo"
+  - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "monthly"
