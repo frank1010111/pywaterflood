@@ -10,11 +10,6 @@ updates:
       # that are used, so they don't need updates here
       - dependency-name: "actions/*"
 
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-
   - package-ecoystem: "cargo"
     directory: "/"
     schedule:
