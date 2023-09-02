@@ -49,6 +49,9 @@ pub fn water_front_velocity(
     if sat_water < sat_water_c {
         return 0.0;
     }
+    if sat_water > 1f64 - sat_oil_r {
+        return 0.0;
+    }
     let sat_wb = breakthrough_sw(
         viscosity_oil,
         viscosity_water,
