@@ -71,16 +71,6 @@ def test_water_front_velocity():
         ]
     )
     assert min(front_v) >= 0, "Front velocity is never negative"
-    # flowing_pore_space = (
-    #     reservoir.flow_cross_section
-    #     * reservoir.phi
-    #     * (1 - reservoir.sat_oil_r - reservoir.sat_water_c)
-    # )
-    # # TODO: Doesn't BL assume piston-like displacement? Something screwy
-    # assert all(front_v <= flow_rate_dist / flowing_pore_space), (
-    #     "The front velocity cannot be faster than the flow rate per pore space, "
-    #     "taking into account mobility ratio"
-    # )
 
 
 def test_breakthrough_sw():
