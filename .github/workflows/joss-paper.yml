@@ -1,3 +1,4 @@
+name: JOSS submission
 on: [push]
 
 jobs:
