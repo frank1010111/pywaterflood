@@ -42,32 +42,45 @@ If you are proposing a feature:
 
 Ready to contribute? Here's how to set up `pywaterflood` for local development.
 
-1. Download a copy of `pywaterflood` locally.
+1. Download a copy of `pywaterflood` locally with [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
    ```console
    git clone https://github.com/frank1010111/pywaterflood.git
    ```
 
-2. Install `pywaterflood` in a virtual environment using `maturin`:
+2. Install python3 and Rust if you haven't already.
+
+   [Python install guide](https://docs.python-guide.org/starting/installation/)
+
+   [Rust install guide](https://www.rust-lang.org/tools/install)
+
+3. Install `pywaterflood` in a virtual environment using `maturin`:
 
    ```console
-   python -m venv venv
+   python3 -m venv venv
    source venv/bin/activate  # assuming linux, MacOS, or git-bash
    pip install maturin
    maturin develop
    ```
 
-3. Use `git` (or similar) to create a branch for local development and make your
+4. Use `git` to create a branch for local development and make your
    changes:
 
    ```console
    git checkout -b name-of-your-bugfix-or-feature
    ```
 
-4. When you're done making changes, check that your changes conform to any code
+5. When you're done making changes, check that your changes conform to any code
    formatting requirements and pass any tests.
 
-5. Commit your changes and open a pull request.
+   You can run the linting and tests with nox:
+
+   ```console
+   pip install nox
+   nox
+   ```
+
+6. Commit your changes and open a pull request.
 
 ## Pull Request Guidelines
 
@@ -80,5 +93,6 @@ Before you submit a pull request, check that it meets these guidelines:
 
 ## Code of Conduct
 
-Please note that the `pywaterflood` project is released with a Code of Conduct.
+Please note that the `pywaterflood` project is released with a
+[Code of Conduct](https://github.com/frank1010111/pywaterflood/blob/master/CONDUCT.md).
 By contributing to this project you agree to abide by its terms.

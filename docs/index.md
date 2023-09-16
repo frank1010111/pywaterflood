@@ -35,7 +35,7 @@ reservoir.
 
 :::{image} https://img.shields.io/badge/-Try%20It%21-orange?style=for-the-badge
 :alt: Try It!
-:target: https://github.com/frank1010111/pywaterflood/blob/master/docs/user-guide/7-minutes-to-pywaterflood.ipynb
+:target: https://colab.research.google.com/github/frank1010111/pywaterflood/blob/master/docs/user-guide/7-minutes-to-pywaterflood.ipynb
 :class: shield-badge
 :::
 
