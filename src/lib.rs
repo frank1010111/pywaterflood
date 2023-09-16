@@ -7,7 +7,7 @@ use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 
 #[pymodule]
-fn pywaterflood(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
     fn q_primary(
         production: ArrayView1<'_, f64>,
         time: ArrayView1<'_, f64>,
