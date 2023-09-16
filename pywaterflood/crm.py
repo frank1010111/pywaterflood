@@ -17,13 +17,12 @@ import pickle
 from pathlib import Path
 from typing import Any
 
+import _core
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numpy.typing import NDArray
 from scipy import optimize
-
-import pywaterflood.pywaterflood as pwf
 
 
 def q_primary(
@@ -52,7 +51,7 @@ def q_primary(
     q_hat : NDArray
         Calculated production, size: Number of time steps
     """
-    return pwf.q_primary(production, time, gain_producer, tau_producer)
+    return _core.q_primary(production, time, gain_producer, tau_producer)
 
 
 def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArray) -> NDArray:
@@ -79,7 +78,7 @@ def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArr
     q_hat : NDArray
         Calculated production, size: Number of time steps
     """
-    return pwf.q_crm_perpair(injection, time, gains, taus)
+    return _core.q_crm_perpair(injection, time, gains, taus)
 
 
 def q_CRM_perproducer(injection: NDArray, time: NDArray, gain: NDArray, tau: float) -> NDArray:
@@ -131,7 +130,7 @@ def q_bhp(pressure_local: NDArray, pressure: NDArray, v_matrix: NDArray) -> NDAr
         production from changing BHP
         shape: n_time
     """
-    return pwf.q_bhp(pressure_local, pressure, v_matrix)
+    return _core.q_bhp(pressure_local, pressure, v_matrix)
 
 
 def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = None) -> NDArray:

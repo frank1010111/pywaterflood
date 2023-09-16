@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import _core
 import numpy as np
 import pandas as pd
 import scipy.linalg as sl
 from numpy import ndarray
-
-import pywaterflood.pywaterflood as pwf
 
 idx = pd.IndexSlice
 
@@ -184,4 +183,4 @@ def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: nda
     y_wD = min([y_i, y_j])
     if not ((x_D - x_wD) > (y_D - y_wD)):
         y_eD = 1.0 / y_eD
-    return pwf.calc_A_ij(x_D, y_D, x_wD, y_wD, y_eD, m)
+    return _core.calc_A_ij(x_D, y_D, x_wD, y_wD, y_eD, m)
