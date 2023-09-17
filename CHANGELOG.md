@@ -2,6 +2,19 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.1 (16/09/2023)
+
+**Code improvements**:
+
+- Fix MPI to be symmetric (https://github.com/frank1010111/pywaterflood/pull/47)
+- Cleaner rust import (https://github.com/frank1010111/pywaterflood/pull/54)
+
+**Documentation**:
+
+- 35 update docs by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/36
+- :memo: add MPI example by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/47
+- Submit to joss by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/50
+
 ## v0.3.0 (03/05/2023)
 
 Code improvements:
@@ -11,7 +24,7 @@ Code improvements:
 Non-code improvements:
 
 - Pre commit changes by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/27
-- :hammer: :bug: update pandas version to fix numpy incompatiblility
+- update pandas version to fix numpy incompatiblility
 
 ## v0.2.0 (21/05/2022)
 

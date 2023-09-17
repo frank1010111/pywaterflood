@@ -1,11 +1,11 @@
 [package]
 name = "pywaterflood"
-version = "0.2.0"
+version = "0.3.1"
 edition = "2018"
 
 
 [lib]
-name = "pywaterflood"
+name = "_core"
 # "cdylib" is necessary to produce a shared library for Python to import from.
 crate-type = ["cdylib"]
 
