@@ -51,7 +51,6 @@ Or from conda/mamba with
 conda install -c conda-forge pywaterflood
 ```
 
-
 Then, [read the docs](https://pywaterflood.readthedocs.io/) to learn more. If you
 want to try it out online before installing it on your computer, you can run
 [this google colab notebook](https://colab.research.google.com/github/frank1010111/pywaterflood/blob/master/docs/user-guide/7-minutes-to-pywaterflood.ipynb).
