@@ -195,7 +195,9 @@ class TestPredict:
         q_hat = crm.predict(injection, time)
         resid1 = production - q_hat
         resid2 = crm.residual(production, injection, time)
+        resid3 = crm.residual()
         assert resid1 == pytest.approx(resid2)
+        assert resid1 == pytest.approx(resid3)
         assert resid1.shape == (len(time), production.shape[-1])
 
 
