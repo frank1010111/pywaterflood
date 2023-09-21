@@ -372,3 +372,21 @@ class TestBhp:
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
         assert prediction1 == pytest.approx(prediction2)
+
+    def test_fit_fails(
+        self,
+        reservoir_simulation_data,
+        primary,
+        tau_selection,
+        constraints,
+    ):
+        crm = CrmCompensated(primary, tau_selection, constraints)
+        injection, production, time = reservoir_simulation_data
+        pressure = np.ones_like(production)
+
+        with pytest.raises(ValueError, match="same number of timesteps"):
+            crm.fit(production, pressure[:-1], injection, time)
+        with pytest.raises(ValueError, match="production and pressure"):
+            crm.fit(production, pressure[:-1], injection, None)
+        with pytest.raises(ValueError, match="injection and pressure"):
+            crm.fit(None, pressure[:-1], injection, None)
