@@ -253,6 +253,9 @@ class TestFit:
         crm.constraints = "sum-to-one injector"
         with pytest.raises(NotImplementedError):
             crm.fit(production, injection, time)
+        crm.constraints = ""
+        with pytest.raises(ValueError, match="constraint"):
+            crm.fit(production, injection, time)
 
     @pytest.mark.slow()
     @pytest.mark.parametrize("random", [True, False])
