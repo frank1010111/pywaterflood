@@ -782,10 +782,6 @@ def _validate_inputs(
     }
     inputs = {key: val for key, val in inputs.items() if val is not None}
     # Shapes
-    test_prod_inj_timesteps = production is not None and injection is not None
-    if test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
-        msg = "production and injection do not have the same number of timesteps"
-        raise ValueError(msg)
     if time is not None:
         for timeseries in inputs:
             if inputs[timeseries].shape[0] != time.shape[0]:
