@@ -547,8 +547,11 @@ class CRM:
             msg = "sum-to-one injector is not implemented"
             raise NotImplementedError(msg)
         else:
-            bounds = ((0, np.inf),) * n
-            constraints_optimizer = ()
+            msg = (
+                f"Constraint must be valid, not {self.constraints}.\n"
+                "For least constrained, use 'positive'"
+            )
+            raise ValueError(msg)
         return bounds, constraints_optimizer
 
     def _calculate_qhat(
