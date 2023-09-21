@@ -250,11 +250,13 @@ class TestFit:
             crm.fit(production, injection[:-1], time)
         with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production, injection, time[:-1])
+        with pytest.raises(ValueError, match="production"):
+            crm.fit(production[:-1], injection, None)
         crm.constraints = "sum-to-one injector"
         with pytest.raises(NotImplementedError):
             crm.fit(production, injection, time)
         crm.constraints = ""
-        with pytest.raises(ValueError, match="constraint"):
+        with pytest.raises(ValueError, match="constrain"):
             crm.fit(production, injection, time)
 
     @pytest.mark.slow()
