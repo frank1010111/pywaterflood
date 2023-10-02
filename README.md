@@ -1,6 +1,7 @@
 # `pywaterflood`: Waterflood Connectivity Analysis
 
 [![PyPI version](https://badge.fury.io/py/pywaterflood.svg)](https://badge.fury.io/py/pywaterflood)
+[![Conda](https://img.shields.io/conda/v/conda-forge/pywaterflood)](https://anaconda.org/conda-forge/pywaterflood)
 [![Documentation Status](https://readthedocs.org/projects/pywaterflood/badge/?version=latest)](https://pywaterflood.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/234408267.svg)](https://zenodo.org/badge/latestdoi/234408267)
 
@@ -42,6 +43,12 @@ You can install this package from PyPI with the line
 
 ```
 pip install pywaterflood
+```
+
+Or from conda/mamba with
+
+```
+conda install -c conda-forge pywaterflood
 ```
 
 Then, [read the docs](https://pywaterflood.readthedocs.io/) to learn more. If you

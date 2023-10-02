@@ -547,8 +547,11 @@ class CRM:
             msg = "sum-to-one injector is not implemented"
             raise NotImplementedError(msg)
         else:
-            bounds = ((0, np.inf),) * n
-            constraints_optimizer = ()
+            msg = (
+                f"Constraint must be valid, not {self.constraints}.\n"
+                "For least constrained, use 'positive'"
+            )
+            raise ValueError(msg)
         return bounds, constraints_optimizer
 
     def _calculate_qhat(
@@ -779,10 +782,6 @@ def _validate_inputs(
     }
     inputs = {key: val for key, val in inputs.items() if val is not None}
     # Shapes
-    test_prod_inj_timesteps = production is not None and injection is not None
-    if test_prod_inj_timesteps and (production.shape[0] != injection.shape[0]):
-        msg = "production and injection do not have the same number of timesteps"
-        raise ValueError(msg)
     if time is not None:
         for timeseries in inputs:
             if inputs[timeseries].shape[0] != time.shape[0]:

@@ -195,7 +195,9 @@ class TestPredict:
         q_hat = crm.predict(injection, time)
         resid1 = production - q_hat
         resid2 = crm.residual(production, injection, time)
+        resid3 = crm.residual()
         assert resid1 == pytest.approx(resid2)
+        assert resid1 == pytest.approx(resid3)
         assert resid1.shape == (len(time), production.shape[-1])
 
 
@@ -248,8 +250,13 @@ class TestFit:
             crm.fit(production, injection[:-1], time)
         with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production, injection, time[:-1])
+        with pytest.raises(ValueError, match="production"):
+            crm.fit(production[:-1], injection, None)
         crm.constraints = "sum-to-one injector"
         with pytest.raises(NotImplementedError):
+            crm.fit(production, injection, time)
+        crm.constraints = ""
+        with pytest.raises(ValueError, match="constrain"):
             crm.fit(production, injection, time)
 
     @pytest.mark.slow()
@@ -365,3 +372,21 @@ class TestBhp:
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
         assert prediction1 == pytest.approx(prediction2)
+
+    def test_fit_fails(
+        self,
+        reservoir_simulation_data,
+        primary,
+        tau_selection,
+        constraints,
+    ):
+        crm = CrmCompensated(primary, tau_selection, constraints)
+        injection, production, time = reservoir_simulation_data
+        pressure = np.ones_like(production)
+
+        with pytest.raises(ValueError, match="same number of timesteps"):
+            crm.fit(production, pressure[:-1], injection, time)
+        with pytest.raises(ValueError, match="production and pressure"):
+            crm.fit(production, pressure[:-1], injection, None)
+        with pytest.raises(ValueError, match="injection and pressure"):
+            crm.fit(None, pressure[:-1], injection, None)
