@@ -1,6 +1,6 @@
 [project]
 name = "pywaterflood"
-version = "0.3.1"
+version = "0.3.2rc1"
 description = "Physics-inspired waterflood performance modeling"
 authors = [{ name = "Frank Male", email = "frmale@utexas.edu" }]
 license = { file = "LICENSE" }
