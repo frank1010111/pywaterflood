@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import _core
 import numpy as np
 import pandas as pd
 import scipy.linalg as sl
 from numpy import ndarray
+
+from pywaterflood import _core
 
 idx = pd.IndexSlice
 

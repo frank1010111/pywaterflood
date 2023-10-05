@@ -17,12 +17,13 @@ import pickle
 from pathlib import Path
 from typing import Any
 
-import _core
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numpy.typing import NDArray
 from scipy import optimize
+
+from pywaterflood import _core
 
 
 def q_primary(
