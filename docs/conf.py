@@ -27,7 +27,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
 ]
-autoapi_dirs = ["../pywaterflood"]
+autoapi_dirs = ["../python/pywaterflood"]
 autoapi_options = [
     "members",
     "inherited-members",
