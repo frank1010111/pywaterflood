@@ -4,15 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-import pywaterflood.pywaterflood as pwf
-
-# from pywaterflood.pywaterflood import (
-#     breakthrough_sw,
-#     fractional_flow_water,
-#     k_rel_oil,
-#     k_rel_water,
-#     water_front_velocity,
-# )
+from pywaterflood import _core
 
 
 @dataclass
@@ -95,7 +87,7 @@ def water_front_velocity(reservoir: Reservoir, sat_water: float, flow_rate: floa
     """
     # assume no free gas
     sat_oil = 1 - sat_water
-    return pwf.water_front_velocity(
+    return _core.water_front_velocity(
         sat_water=sat_water, sat_oil=sat_oil, flow_rate=flow_rate, **asdict(reservoir)
     )
 
@@ -122,4 +114,4 @@ def breakthrough_sw(reservoir: Reservoir):
             "n_water",
         ]
     }
-    return pwf.breakthrough_sw(**params)
+    return _core.breakthrough_sw(**params)
