@@ -19,7 +19,7 @@ author = "Frank Male"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_nb",
+    "myst_parser",
     "autoapi.extension",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
