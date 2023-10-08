@@ -6,13 +6,13 @@ This is a [choose one]
 - documentation improvement
 - bugfix
 
-It enhances ...
+It enhances/documents/fixes [something]
 
-# Pull request checklist
+## Pull request checklist
 
-- [ ] If features have changed, there's new documentation, and it has been checked: `nox -s docs -- serve`
+- [ ] If features have changed, there's new documentation, and it has been checked: `nox -s docs -- --serve`
 - [ ] If a bugfix, new tests are in `testing/`
-- [ ] Passes all CI/CD tests:
+- Passes all CI/CD tests:
   - [ ] Pre-commit linting passes: `nox -s lint`
   - [ ] Package builds `nox -s build`
   - [ ] Tests all pass: `nox -s tests`
