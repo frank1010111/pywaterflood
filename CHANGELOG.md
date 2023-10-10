@@ -2,6 +2,29 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.2 (11/10/2023)
+
+**Critical fix:**
+
+- :bug: fix import error pitfall for maturin by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/62
+
+**Python version update:**
+
+- :test_tube: bump latest tested python to 3.12 by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/60
+
+**Added tests:**
+
+- Add tests by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/56
+- Add tests by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/57
+
+**Dependency updates:**
+
+- build(deps): bump pypa/cibuildwheel from 2.15.0 to 2.16.0 by @dependabot in https://github.com/frank1010111/pywaterflood/pull/55
+- build(deps): bump pypa/cibuildwheel from 2.16.0 to 2.16.1 by @dependabot in https://github.com/frank1010111/pywaterflood/pull/59
+- :memo: :bug: :hammer: change from myst_nb to myst_parser for docs to … by @frank1010111 in https://github.com/frank1010111/pywaterflood/pull/63
+
+**Full Changelog**: https://github.com/frank1010111/pywaterflood/compare/v0.3.1...v0.3.2
+
 ## v0.3.1 (16/09/2023)
 
 **Code improvements**:

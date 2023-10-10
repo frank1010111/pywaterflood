@@ -27,7 +27,9 @@ dependencies = [
 test = ["pytest >=6.2.5", "pytest-cov >=3.0.0", "coverage[toml] >=6.3.3"]
 docs = [
     "furo",
+    "nbsphinx>=0.9",
     "myst_parser>=0.13",
+    "pandoc>=1.12",
     "sphinx>=7.0",
     "sphinx-autoapi",
     "sphinx-copybutton",

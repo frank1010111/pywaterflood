@@ -80,7 +80,24 @@ Ready to contribute? Here's how to set up `pywaterflood` for local development.
    nox
    ```
 
-6. Commit your changes and open a pull request.
+   To make sure linting runs with every commit, use pre-commit hooks:
+
+   ```console
+   pip install pre-commit
+   pre-commit install --install-hooks
+   ```
+
+6. If you've updated the documentation, check that sphinx still builds.
+
+   You need to make sure you've installed [pandoc](https://pandoc.org/installing.html), then use nox to build and serve them.
+
+   ```console
+   nox -s docs -- --serve
+   ```
+
+   Point your browser to <localhost:8000> to see if they look how you expect.
+
+7. Commit your changes and open a pull request.
 
 ## Pull Request Guidelines
 
