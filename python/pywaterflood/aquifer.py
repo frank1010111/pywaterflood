@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -38,25 +39,75 @@ def effective_reservoir_radius(
     )
 
 
-def water_dimensionless_infinite(time_D: float) -> float:
+def water_dimensionless_infinite(
+    time_D: float | NDArray[np.float64],
+    method: Literal["marsal-walsh", "klins"] = "marsal-walsh",
+) -> NDArray[np.float64]:
     """Calculate infinite acting radial aquifer dimensionless water influx.
 
     Parameters
     ----------
-    time_D : float
+    time_D : float | NDArray[np.float64]
         dimensionless time
 
     Returns
     -------
-    float
+    NDArray[np.float64]
         dimensionless water influx
     """
-    return np.cumsum(
-        2 * np.sqrt(time_D / math.pi)
-        + time_D / 2
-        - time_D / 6 * np.sqrt(time_D / math.pi)
-        + time_D**2 / 16
-    )
+    if isinstance(time_D, float):
+        time_D = np.array([time_D])
+
+    water_influx = np.zeros_like(time_D)
+    if method == "marsal-walsh":
+        # short time
+        short_time = time_D <= 1
+        water_influx[short_time] = (
+            2 * np.sqrt(time_D[short_time] / math.pi)
+            + time_D[short_time] / 2
+            - time_D[short_time] / 6 * np.sqrt(time_D[short_time] / math.pi)
+            + time_D[short_time] ** 2 / 16
+        )
+        # medium time
+        med_time = (time_D > 1) & (time_D <= 100)
+        a_coefficients = [
+            8.1638e-1,
+            8.5373e-1,
+            -2.7455e-2,
+            1.0284e-3,
+            -2.274e-5,
+            2.8354e-7,
+            -1.8436e-9,
+            4.8534e-12,
+        ]
+        water_influx[med_time] = np.sum(
+            a_coefficients[i] * time_D[med_time] ** i for i in range(8)
+        )
+        # long time
+        long_time = time_D > 100
+        water_influx[long_time] = 2 * time_D[long_time] / np.log(time_D[long_time])
+    elif method == "klins":
+        # short time
+        short_time = time_D <= 0.01
+        water_influx[short_time] = np.sqrt(time_D[short_time] / np.pi)
+        # medium time
+        med_time = (time_D > 0.01) & (time_D <= 200)
+        sqrt_time = np.sqrt(time_D[med_time])
+        water_influx[med_time] = (
+            1.2838 * sqrt_time
+            + 1.19328 * time_D[med_time]
+            + 0.269872 * sqrt_time**3
+            + 0.00855294 * time_D[med_time] ** 2
+        ) / (1 + 0.616599 * sqrt_time + 0.0413008 * time_D[med_time])
+        # long time
+        long_time = time_D > 200
+        water_influx[long_time] = (-4.29881 + 2.02566 * time_D[long_time]) / np.log(
+            time_D[long_time]
+        )
+    else:
+        msg = f"method must be 'marsal-walsh' or 'klins', but '{method}' was given"
+        raise ValueError(msg)
+    return water_influx
 
 
 def aquifer_production_infinite(
