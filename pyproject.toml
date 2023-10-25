@@ -1,6 +1,6 @@
 [project]
 name = "pywaterflood"
-version = "0.3.2rc1"
+version = "0.3.2"
 description = "Physics-inspired waterflood performance modeling"
 authors = [{ name = "Frank Male", email = "frmale@utexas.edu" }]
 license = { file = "LICENSE" }
@@ -27,8 +27,10 @@ dependencies = [
 test = ["pytest >=6.2.5", "pytest-cov >=3.0.0", "coverage[toml] >=6.3.3"]
 docs = [
     "furo",
-    "myst-nb",
-    "sphinx",
+    "nbsphinx>=0.9",
+    "myst_parser>=0.13",
+    "pandoc>=1.12",
+    "sphinx>=7.0",
     "sphinx-autoapi",
     "sphinx-copybutton",
     "sphinx-design",
