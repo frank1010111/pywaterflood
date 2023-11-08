@@ -62,6 +62,9 @@ jobs:
           name: artifact
           path: dist
 
+      - name: Check wheel contents
+        run: pipx run check-wheel-contents dist/
+
       - uses: pypa/gh-action-pypi-publish@v1.8.10
         with:
           # If you've already pushed this version to TestPyPI, don't fail the job
@@ -88,6 +91,9 @@ jobs:
           path: dist
 
       - run: pipx run twine check dist/*
+
+      - name: Check wheel contents
+        run: pipx run check-wheel-contents dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.8.10
