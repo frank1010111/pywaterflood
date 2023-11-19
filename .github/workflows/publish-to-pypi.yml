@@ -63,7 +63,8 @@ jobs:
           path: dist
 
       - name: Check wheel contents
-        run: pipx run check-wheel-contents --package-omit='*abi3-musllinux*' dist/
+        # ignore abi3-musllinux false positives
+        run: pipx run check-wheel-contents --ignore=W009,W010 dist/
 
       - uses: pypa/gh-action-pypi-publish@v1.8.10
         with:
