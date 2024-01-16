@@ -62,7 +62,7 @@ repos:
     hooks:
       - id: shellcheck
   - repo: https://github.com/doublify/pre-commit-rust
-    rev: v1.0
+    rev: 1c787730fac3d4f130c47d015b242c6a79b99d5b
     hooks:
       - id: fmt
       - id: cargo-check
