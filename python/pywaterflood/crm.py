@@ -266,8 +266,8 @@ class CRM:
         Example
         -------
         >>> gh_url = (
-        >>>     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
-        >>> )
+        ...     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+        ... )
         >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
         >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
         >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
@@ -339,9 +339,10 @@ class CRM:
         Example
         -------
         Using the synthetic reservoir:
+
         >>> gh_url = (
-        >>>     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
-        >>> )
+        ...     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+        ... )
         >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
         >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
         >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
@@ -350,6 +351,7 @@ class CRM:
         >>> crm.predict()
 
         Starting from a known model:
+
         >>> injection = np.ones((100, 2))
         >>> production = np.ones((1, 1)) * 2
         >>> time = np.arange(100, dtype=float)
