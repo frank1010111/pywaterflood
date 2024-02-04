@@ -164,6 +164,34 @@ class TestPredict:
             rel=1e-2,
         )
 
+    def test_predict_untrained(self, reservoir_simulation_data, primary, tau_selection):
+        """Test predicting from gains in as a guess with no prior fitting."""
+        crm = CRM(primary=primary, tau_selection=tau_selection)
+        injection, production, time = reservoir_simulation_data
+        n_inj = injection.shape[1]
+        n_prod = production.shape[1]
+        if tau_selection == "per-producer":
+            tau = np.full(n_prod, 21.1)
+        else:
+            tau = np.full((n_inj, n_prod), 21.1)
+        connections = {
+            "gains": np.ones((n_inj, n_prod)),
+            "tau": tau,
+            "gains_producer": np.ones(n_prod),
+            "tau_producer": np.full(n_prod, 20.0),
+        }
+        prediction = crm.predict(injection, time, connections=connections, production=production)
+        assert np.all(prediction >= 0)
+        if not primary:
+            connections = {
+                "gains": np.ones((n_inj, n_prod)),
+                "tau": tau,
+            }
+            prediction = crm.predict(
+                injection, time, connections=connections, production=production
+            )
+            assert np.all(prediction >= 0)
+
     def test_predict_fails(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary, tau_selection)
