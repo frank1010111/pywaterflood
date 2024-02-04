@@ -321,19 +321,28 @@ class CRM:
         q_hat :NDArray
             The predicted values, shape (n_time, n_producers)
         """
+        if production is None:
+            production = self.production
+        n_producers = production.shape[1]
+
         if connections is not None:
-            gains = connections.get("gains", self.gains)
-            tau = connections.get("tau", self.tau)
-            gains_producer = connections.get("gains_producer", self.gains_producer)
-            tau_producer = connections.get("tau_producer", self.tau_producer)
+            gains = connections.get("gains")
+            if gains is None:
+                gains = self.gains
+            tau = connections.get("tau")
+            if tau is None:
+                tau = self.tau
+            gains_producer = connections.get("gains_producer")
+            if gains_producer is None:
+                gains_producer = self.gains_producer if self.primary else np.zeros(n_producers)
+            tau_producer = connections.get("tau_producer")
+            if tau_producer is None:
+                tau_producer = self.tau_producer if self.primary else np.ones(n_producers)
         else:
             gains = self.gains
             tau = self.tau
             gains_producer = self.gains_producer
             tau_producer = self.tau_producer
-        if production is None:
-            production = self.production
-        n_producers = production.shape[1]
 
         if int(injection is None) + int(time is None) == 1:
             msg = "predict() takes 1 or 3 arguments, 2 given"
