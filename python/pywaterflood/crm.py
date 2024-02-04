@@ -1,16 +1,17 @@
 """Analyze waterfloods with capacitance-resistance models.
 
-This is the central module in :code:`pywaterflood`, based around the:code:`CRM`
+This is the central module in ``pywaterflood``, based around the:code:`CRM`
 class, which implements the standard capacitance-resistance models. For most
 cases, the best performance comes from selecting
 :code:`CRM(primary=True, tau_selection="per-pair", constraints="up-to one")`.
-If the data is too sparse, then change :code:`tau_selection` to "per-producer".
+If the data is too sparse, then change ``tau_selection`` to "per-producer".
 
 The base class assumes constant bottomhole pressures for the producing wells.
 If you know the pressures for these wells or at least the trend, consider using
-:code:`CrmCompensated`.
+``CrmCompensated``.
 
 """
+
 from __future__ import annotations
 
 import pickle
@@ -29,7 +30,7 @@ from pywaterflood import _core
 def q_primary(
     production: NDArray, time: NDArray, gain_producer: float, tau_producer: float
 ) -> NDArray:
-    """Calculate primary production contribution.
+    r"""Calculate primary production contribution.
 
     Uses Arps equation with :math:`b=0`
 
@@ -43,14 +44,14 @@ def q_primary(
     time : NDArray
         Producing times to forecast, size: Number of time steps
     gain_producer : float
-        Arps q_i factor
+        Arps :math:`q_i` factor
     tau_producer : float
         Arps time constant
 
     Returns
     ----------
     q_hat : NDArray
-        Calculated production, size: Number of time steps
+        Calculated production, :math:`\hat q`, size: Number of time steps
     """
     return _core.q_primary(production, time, gain_producer, tau_producer)
 
@@ -77,7 +78,7 @@ def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArr
     Returns
     ----------
     q_hat : NDArray
-        Calculated production, size: Number of time steps
+        Calculated production :math:`\\hat q`, size: Number of time steps
     """
     return _core.q_crm_perpair(injection, time, gains, taus)
 
@@ -85,7 +86,7 @@ def q_CRM_perpair(injection: NDArray, time: NDArray, gains: NDArray, taus: NDArr
 def q_CRM_perproducer(injection: NDArray, time: NDArray, gain: NDArray, tau: float) -> NDArray:
     """Calculate per injector-producer pair production (simplified tank).
 
-    Uses simplified CRMp model that assumes a single tau for each producer
+    Uses simplified CRMP model that assumes a single tau for each producer
 
     Args
     ----------
@@ -102,7 +103,9 @@ def q_CRM_perproducer(injection: NDArray, time: NDArray, gain: NDArray, tau: flo
     Returns
     ----------
     q_hat : NDArray
-        Calculated production, size: Number of time steps
+        Calculated production :math:`\\hat q`
+
+        shape: Number of time steps
     """
     tau2 = np.full(injection.shape[1], tau)
     return q_CRM_perpair(injection, time, gain, tau2)
@@ -128,8 +131,7 @@ def q_bhp(pressure_local: NDArray, pressure: NDArray, v_matrix: NDArray) -> NDAr
     Returns
     -------
     q : NDArray
-        production from changing BHP
-        shape: n_time
+        production from changing BHP, shape: n_time
     """
     return _core.q_bhp(pressure_local, pressure, v_matrix)
 
@@ -139,14 +141,17 @@ def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = No
 
     Args
     ----
-    n_i : int
-    n_j : int
+    n_prod : int
+        Number of producing wells
+    n_inj : int
+        Number of injecting wells
     axis : int, default is 0
     seed : int, default is None
 
     Returns
     -------
     gains_guess: NDArray
+        shape: n_prod, n_inj
     """
     rng = np.random.default_rng(seed)
     limit = 10 * (n_prod if axis == 0 else n_inj)
@@ -170,7 +175,7 @@ class CRM:
     tau_selection : str
         How many tau values to select
             - If 'per-pair', fit tau for each producer-injector pair
-            - If 'per-producer', fit tau for each producer (CRMp model)
+            - If 'per-producer', fit tau for each producer (CRMP model)
     constraints : str
         How to constrain the gains
             * If 'up-to one' (default), let gains vary from 0 (no connection) to 1 \
@@ -184,7 +189,7 @@ class CRM:
 
     Examples
     ----------
-    crm = CRM(True, "per-pair", "up-to one")
+    >>> crm = CRM(True, "per-pair", "up-to one")
 
     References
     ----------
@@ -257,6 +262,17 @@ class CRM:
         Returns
         ----------
         self: trained model
+
+        Example
+        -------
+        >>> gh_url = (
+        >>>     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+        >>> )
+        >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
+        >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
+        >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
+        >>> crm = CRM(True, "per-pair", "up-to one")
+        >>> crm.fit(prod, inj, time)
         """
         _validate_inputs(production, injection, time)
         self.production = production
@@ -311,8 +327,7 @@ class CRM:
         time : Optional NDArray
             The timesteps to predict
         connections : Optional dict
-            if present, the gains, tau, gains_producer, tau_producer
-            matrices
+            if present, the gains, tau, gains_producer, tau_producer matrices
         production : Optional NDArray
             The production (only takes first row to use for primary production decline)
 
@@ -320,6 +335,32 @@ class CRM:
         ----------
         q_hat :NDArray
             The predicted values, shape (n_time, n_producers)
+
+        Example
+        -------
+        Using the synthetic reservoir:
+        >>> gh_url = (
+        >>>     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+        >>> )
+        >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
+        >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
+        >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
+        >>> crm = CRM(True, "per-producer", "up-to one")
+        >>> crm.fit(prod, inj, time)
+        >>> crm.predict()
+
+        Starting from a known model:
+        >>> injection = np.ones((100, 2))
+        >>> production = np.ones((1, 1)) * 2
+        >>> time = np.arange(100, dtype=float)
+        >>> connections = {
+        ...     "gains": np.ones((2, 1)) * 0.95,
+        ...     "tau": np.ones((2, 1)) * 3,
+        ...     "gains_producer": np.zeros(1),
+        ...     "tau_producer": np.ones(1),
+        ... }
+        >>> crm = CRM(False, "per-pair")
+        >>> crm.predict(injection, time, connections=connections, production=production)
         """
         if production is None:
             production = self.production
@@ -372,6 +413,14 @@ class CRM:
             injection rates with shape (n_time, n_injectors)
         time : NDArray
             timesteps with shape n_time
+
+        Example
+        -------
+        >>> injection = np.ones((100,2))
+        >>> production = np.full((100,1), 2.0)
+        >>> time = np.arange(100, dtype=float)
+        >>> crm = CRM()
+        >>> crm.set_rates(production, injection, time)
         """
         _validate_inputs(production, injection, time)
         if production is not None:
@@ -396,6 +445,13 @@ class CRM:
             gain on primary production, shape: n_producers
         tau_producer : NDArray
             Arps time constant for primary production, shape: n_producers
+
+        Example
+        -------
+        >>> crm = CRM(False, "per-pair")
+        >>> gains = np.full((2, 1),0.95)
+        >>> tau = np.full((2, 1), 3.0)
+        >>> crm.set_connections(gains, tau)
         """
         if gains is not None:
             self.gains = gains
