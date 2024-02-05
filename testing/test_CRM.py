@@ -145,7 +145,7 @@ class TestInstantiate:
 @pytest.mark.parametrize("primary", primary)
 class TestPredict:
     def test_predict(self, reservoir_simulation_data, trained_model, primary, tau_selection):
-        injection, production, time = reservoir_simulation_data
+        injection, _production, time = reservoir_simulation_data
         crm = trained_model(primary=primary, tau_selection=tau_selection)
 
         prediction1 = crm.predict()
