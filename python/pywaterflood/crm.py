@@ -400,7 +400,10 @@ class CRM:
 
         q_hat = np.zeros((len(time), n_producers))
         for i in range(n_producers):
-            q_hat[:, i] += q_primary(production[:, i], time, gains_producer[i], tau_producer[i])
+            if self.primary:
+                q_hat[:, i] += q_primary(
+                    production[:, i], time, gains_producer[i], tau_producer[i]
+                )
             q_hat[:, i] += self.q_CRM(injection, time, gains[i, :], tau[i])
         return q_hat
 
@@ -630,10 +633,9 @@ class CRM:
         time: NDArray,
     ):
         gains, tau, gain_producer, tau_producer = self._split_opts(x)
+        q_hat = np.zeros(len(time))
         if self.primary:
-            q_hat = q_primary(production, time, gain_producer, tau_producer)
-        else:
-            q_hat = np.zeros(len(time))
+            q_hat += q_primary(production, time, gain_producer, tau_producer)
 
         q_hat += self.q_CRM(injection, time, gains, tau)
         return q_hat
