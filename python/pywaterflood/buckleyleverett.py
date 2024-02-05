@@ -12,9 +12,9 @@ class Reservoir:
     phi: float
     """effective porosity"""
     viscosity_oil: float
-    """oil viscosity in Pa.s"""
+    """oil viscosity in Pa⋅s"""
     viscosity_water: float
-    """water viscosity in Pa.s"""
+    """water viscosity in Pa⋅s"""
     sat_oil_r: float
     """residual oil saturation"""
     sat_water_c: float
@@ -26,7 +26,7 @@ class Reservoir:
     n_water: float
     """Brooks-Corey exponent for water rel-perm"""
     flow_cross_section: float = 1.0
-    """Area flow is through in m^2, defaults to 1"""
+    """Area flow is through in m$^2$, defaults to 1"""
 
     def __post_init__(self):
         """Validate inputs after initialization."""
@@ -64,10 +64,9 @@ def water_front_velocity(reservoir: Reservoir, sat_water: float, flow_rate: floa
 
     Above the breakthrough saturation follows this equation:
 
-    $$\begin{equation}
-    \left(\frac{dx}{dt}\right)_{S_w}
+    .. math::
+        \left(\frac{dx}{dt}\right)_{S_w}
         = \frac{q_t}{\phi A} \left(\frac{\partial f_w}{\partial S_w}\right)_t
-    \end{equation}$$
 
     Below the breakthrough saturation, the velocity is equal to the velocity for the equation
     at breakthrough saturation.
@@ -79,11 +78,11 @@ def water_front_velocity(reservoir: Reservoir, sat_water: float, flow_rate: floa
     sat_water: float
         fraction of fluid that is water
     flow_rate: float
-        water injection rate in m^3/d
+        water injection rate in m$^3$/d
 
     Returns
     -------
-    the front velocity in m/d"
+    the front velocity in m/d
     """
     # assume no free gas
     sat_oil = 1 - sat_water
