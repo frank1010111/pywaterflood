@@ -4,7 +4,16 @@ This is the central module in ``pywaterflood``, based around the:code:`CRM`
 class, which implements the standard capacitance-resistance models. For most
 cases, the best performance comes from selecting
 :code:`CRM(primary=True, tau_selection="per-pair", constraints="up-to one")`.
+In the literature, this is referred to as CRM-IP (injector producer).
+
 If the data is too sparse, then change ``tau_selection`` to "per-producer".
+This reduces the number of variables to fit by nearly half by using only one
+time constant for all well connections influencing a producer. This is referred
+to as CRM-P in the literature.
+
+If the data is still too sparse, you can sum all the injectors, all the producers,
+or both. This greatly decreases the utility of the model and is not recommended. In
+the literature, it is known as CRM-T.
 
 The base class assumes constant bottomhole pressures for the producing wells.
 If you know the pressures for these wells or at least the trend, consider using
@@ -166,7 +175,11 @@ class CRM:
     CRM uses a physics-inspired mass balance approach to explain production for
     waterfloods. It treats each injector-producer well pair as a system
     with mass input, output, and pressure related to the mass balance.
-    Several versions exist. Select them from the arguments.
+    Several versions exist and can be selected from the arguments.
+
+    The default arguments give the best results for most scenarios, but they
+    can be sub-optimal if there is insufficient data, and they run slower than
+    models with more simplifying assumptions.
 
     Args
     ----------
