@@ -266,7 +266,8 @@ class CRM:
         initial_guess : NDArray
             initial guesses for gains, taus, primary production contribution
             shape: (len(guess), n_producers)
-        num_cores (int): number of cores to run fitting procedure on, defaults to 1
+        num_cores : int
+            number of cores to run fitting procedure on, defaults to 1
         random : bool
             whether to randomly initialize the gains
         **kwargs:
