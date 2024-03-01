@@ -1,6 +1,6 @@
 """Analyze waterfloods with capacitance-resistance models.
 
-This is the central module in ``pywaterflood``, based around the:code:`CRM`
+This is the central module in ``pywaterflood``, based around the :code:`CRM`
 class, which implements the standard capacitance-resistance models. For most
 cases, the best performance comes from selecting
 :code:`CRM(primary=True, tau_selection="per-pair", constraints="up-to one")`.
@@ -155,7 +155,9 @@ def random_weights(n_prod: int, n_inj: int, axis: int = 0, seed: int | None = No
     n_inj : int
         Number of injecting wells
     axis : int, default is 0
+        0 corresponds to normalizing among producers, 1 to normalizing among injectors
     seed : int, default is None
+        state for random number generator
 
     Returns
     -------
@@ -184,7 +186,7 @@ class CRM:
     Args
     ----------
     primary : bool
-        Whether to model primary production (strongly recommended)
+        Whether to model primary production (True is strongly recommended)
     tau_selection : str
         How many tau values to select
             - If 'per-pair', fit tau for each producer-injector pair
