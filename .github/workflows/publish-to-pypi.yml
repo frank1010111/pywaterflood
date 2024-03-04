@@ -66,7 +66,7 @@ jobs:
         # ignore abi3-musllinux false positives
         run: pipx run check-wheel-contents --ignore=W009,W010 dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.8.11
+      - uses: pypa/gh-action-pypi-publish@v1.8.12
         with:
           # If you've already pushed this version to TestPyPI, don't fail the job
           skip-existing: true
@@ -97,7 +97,7 @@ jobs:
         run: pipx run check-wheel-contents dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.11
+        uses: pypa/gh-action-pypi-publish@v1.8.12
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
