@@ -363,8 +363,8 @@ class TestExport:
 
 
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
-class TestBhp:
-    def test_init_bhp(self, primary, tau_selection, constraints):
+class TestCompensated:
+    def test_init_compensated(self, primary, tau_selection, constraints):
         crm = CrmCompensated(primary, tau_selection, constraints)
         assert crm.primary == primary
 
@@ -400,6 +400,8 @@ class TestBhp:
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
         assert prediction1 == pytest.approx(prediction2)
+        prediction3 = crm.predict(injection, time, pressure=pressure)
+        assert prediction3 == pytest.approx(prediction1)
 
     def test_fit_fails(
         self,
