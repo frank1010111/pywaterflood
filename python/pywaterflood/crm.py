@@ -404,7 +404,7 @@ class CRM:
             tau_producer = self.tau_producer
 
         if int(injection is None) + int(time is None) == 1:
-            msg = "predict() takes 1 or 3 arguments, 2 given"
+            msg = "Either both or neither of injection or time must be specified"
             raise TypeError(msg)
         if injection is None:
             injection = self.injection
@@ -487,7 +487,7 @@ class CRM:
         """Calculate the production minus the predicted production for a trained model.
 
         If the production, injection, and time are not provided, this will use the
-         training values
+        training values
 
         Args
         ----------
@@ -772,6 +772,109 @@ class CrmCompensated(CRM):
         self.tau_producer = np.array(tau_producer)
         self.gain_pressure: NDArray = np.vstack(gain_pressure)
         return self
+
+    def predict(
+        self,
+        injection=None,
+        time=None,
+        connections=None,
+        production=None,
+        pressure=None,
+    ):
+        """Predict production for a trained model.
+
+        If the injection and time are not provided, this will use the training values
+
+        Args
+        ----------
+        injection : Optional NDArray
+            The injection rates to input to the system, shape (n_time, n_inj)
+        time : Optional NDArray
+            The timesteps to predict
+        connections : Optional dict
+            if present, the gains, tau, gains_producer, tau_producer matrices
+        production : Optional NDArray
+            The production (only takes first row to use for primary production decline)
+
+        Returns
+        ----------
+        q_hat :NDArray
+            The predicted values, shape (n_time, n_producers)
+
+        Example
+        -------
+        Using the synthetic reservoir:
+
+        >>> gh_url = (
+        ...     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+        ... )
+        >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
+        >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
+        >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
+        >>> pressure = (1000 - prod * 0.1)
+        >>> crm = CrmCompensated(True, "per-producer", "up-to one")
+        >>> crm.fit(prod, inj, time)
+        >>> crm.predict()
+
+        Starting from a known model:
+
+        >>> injection = np.ones((100, 2))
+        >>> production = np.ones((1, 1)) * 2
+        >>> time = np.arange(100, dtype=float)
+        >>> connections = {
+        ...     "gains": np.ones((2, 1)) * 0.95,
+        ...     "tau": np.ones((2, 1)) * 3,
+        ...     "gains_producer": np.zeros(1),
+        ...     "tau_producer": np.ones(1),
+        ... }
+        >>> crm = CRM(False, "per-pair")
+        >>> crm.predict(injection, time, connections=connections, production=production)
+        """
+        if int(injection is None) + int(time is None) == 1:
+            msg = "Either both or neither of injection or time must be specified"
+            raise TypeError(msg)
+
+        injection = self.injection if injection is None else injection
+        time = self.time if time is None else time
+        production = self.production if production is None else production
+        pressure = self.pressure if pressure is None else pressure
+        n_producers = production.shape[1]
+        if time.shape[0] != injection.shape[0]:
+            msg = "injection and time need same number of steps"
+            raise ValueError(msg)
+
+        if connections is not None:
+            gains = connections.get("gains")
+            if gains is None:
+                gains = self.gains
+            tau = connections.get("tau")
+            if tau is None:
+                tau = self.tau
+            gains_producer = connections.get("gains_producer")
+            if gains_producer is None:
+                gains_producer = self.gains_producer if self.primary else np.zeros(n_producers)
+            tau_producer = connections.get("tau_producer")
+            if tau_producer is None:
+                tau_producer = self.tau_producer if self.primary else np.ones(n_producers)
+            gains_pressure = connections.get("gains_pressure")
+            if gains_pressure is None:
+                gains_pressure = self.gain_pressure
+        else:
+            gains = self.gains
+            tau = self.tau
+            gains_producer = self.gains_producer
+            tau_producer = self.tau_producer
+            gains_pressure = self.gain_pressure
+
+        q_hat = np.zeros((len(time), n_producers))
+        for i in range(n_producers):
+            if self.primary:
+                q_hat[:, i] += q_primary(
+                    production[:, i], time, gains_producer[i], tau_producer[i]
+                )
+                q_hat[:, i] += self.q_CRM(injection, time, gains[i, :], tau[i])
+                q_hat[:, i] += q_bhp(pressure[:, i], pressure, gains_pressure[i, :])
+        return q_hat
 
     def _calculate_qhat(
         self,
