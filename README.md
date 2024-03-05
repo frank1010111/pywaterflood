@@ -87,7 +87,11 @@ to help you set up. Discussions could start anytime at
 Luckily, [maturin](https://www.maturin.rs/) is a very convenient tool for working
 with mixed Python-Rust projects.
 
-Running tests and linting to conform to code standards is handled by [nox](https://nox.thea.codes) and can be run, after installing nox, with
+Running tests, building the package, linting to conform to code standards, and building the documentation are all handled by [nox](https://nox.thea.codes).
+
+### Running tests
+
+The [guide for getting started](https://github.com/frank1010111/pywaterflood/blob/master/CONTRIBUTING.md#get-started), has instructions for installing rust, python, and nox. At that point, both the lint and unit test sessions are run with the command
 
 ```
 nox
