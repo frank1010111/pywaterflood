@@ -26,12 +26,14 @@ jobs:
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.5
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
 
@@ -44,7 +46,7 @@ jobs:
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/
 
@@ -55,7 +57,7 @@ jobs:
       id-token: write
     steps:
       - name: get artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
@@ -84,7 +86,7 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: get artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
