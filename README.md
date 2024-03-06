@@ -58,6 +58,7 @@ want to try it out online before installing it on your computer, you can run
 
 ### A simple example
 
+    import numpy as np
     import pandas as pd
     from pywaterflood import CRM
 
@@ -71,6 +72,10 @@ want to try it out online before installing it on your computer, you can run
     q_hat = crm.predict()
     residuals = crm.residual()
 
+    print("MAE by well:", np.round(np.abs(residuals).mean(axis=0), 2), "barrels")
+    print("MAPE by well:", np.round(np.mean(np.abs(residuals) / prod * 100, axis=0), 2), "percent")
+    print("RMSE by well:", np.round(np.sqrt(np.sum(residuals**2, axis=0)), 2))
+
 ## Contributing
 
 Contributions are extremely welcome! Have [an issue to report](https://github.com/frank1010111/bluebonnet/issues/new)?
@@ -81,6 +86,16 @@ to help you set up. Discussions could start anytime at
 `pywaterflood` uses Rust for computation and python as the high level interface.
 Luckily, [maturin](https://www.maturin.rs/) is a very convenient tool for working
 with mixed Python-Rust projects.
+
+Running tests, building the package, linting to conform to code standards, and building the documentation are all handled by [nox](https://nox.thea.codes).
+
+### Running tests
+
+The [guide for getting started](https://github.com/frank1010111/pywaterflood/blob/master/CONTRIBUTING.md#get-started), has instructions for installing rust, python, and nox. At that point, both the lint and unit test sessions are run with the command
+
+```
+nox
+```
 
 ## License
 

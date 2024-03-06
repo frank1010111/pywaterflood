@@ -36,3 +36,10 @@ crm.fit(prod, inj, time)
 q_hat = crm.predict()
 residuals = crm.residual()
 ```
+
+The connectivity matrix can be created thusly:
+
+```python
+connectivity = pd.DataFrame(crm.gains).rename_axis(index="Producer", columns="Injector")
+connectivity.T.style.highlight_max().format("{:.2}")
+```
