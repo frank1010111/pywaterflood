@@ -195,7 +195,9 @@ class TestPredict:
     def test_predict_fails(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary, tau_selection)
-        with pytest.raises(TypeError, match="arguments"):
+        with pytest.raises(
+            TypeError, match="Either both or neither of injection or time must be specified"
+        ):
             crm.predict(injection)
         with pytest.raises(ValueError, match="number of steps"):
             crm.predict(injection, time[:-1])
