@@ -25,7 +25,7 @@ Well connectivity analysis has many applications for subsurface energy, covering
 
 `Pywaterflood` is a Python package that uses Capacitance Resistance Modeling (CRM) to estimate well connectivity. It is a portmanteau of "Python" and "waterflood," where a waterflood is an oil reservoir with water injection designed to increase reservoir pressure and move oil towards producing wells. The `CRM` submodule forms the bulk of this package. It can perform CRM with differing levels of complexity, from assuming that producing and injecting wells share one universal time constant, to each producer has the same time constant with all injectors, to each producer-injector pair has an its own time constant. CRM was developed by @yousef2006capacitance.
 
-The `MPI` submodule uses a geometrical model of well influence [@valko2000development], extended and applied to reservoirs with both injecting and producing wells [@kaviani2010inferring]. As a geometrical model, it can assist in planning reservoirs before any production or injection has begun.
+The `MPI` (Multiwell Productivity Index) submodule uses a geometrical model of well influence [@valko2000development], extended and applied to reservoirs with both injecting and producing wells [@kaviani2010inferring]. As a geometrical model, it can assist in planning reservoirs before any production or injection has begun.
 
 # Statement of need
 
