@@ -59,7 +59,7 @@ jobs:
       id-token: write
     steps:
       - name: get artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
@@ -82,11 +82,12 @@ jobs:
     permissions:
       id-token: write
       contents: write
+    environment: release
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: get artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
