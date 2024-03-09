@@ -26,7 +26,9 @@ jobs:
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.5
@@ -39,7 +41,9 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build sdist
         run: pipx run build --sdist
@@ -66,12 +70,10 @@ jobs:
         # ignore abi3-musllinux false positives
         run: pipx run check-wheel-contents --ignore=W009,W010 dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.8.11
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           # If you've already pushed this version to TestPyPI, don't fail the job
           skip-existing: true
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
 
   upload_pypi:
@@ -80,6 +82,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
+    environment: release
     # Publish when a GitHub Release is created, use the following rule:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
@@ -94,13 +97,11 @@ jobs:
       - run: pipx run twine check dist/*
 
       - name: Check wheel contents
-        run: pipx run check-wheel-contents dist/
+        # ignore abi3-musllinux false positives
+        run: pipx run check-wheel-contents --ignore=W009,W010 dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.11
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
