@@ -1,6 +1,6 @@
 [package]
 name = "pywaterflood"
-version = "0.3.1"
+version = "0.3.3"
 edition = "2018"
 
 
@@ -15,4 +15,4 @@ numpy = "0.16.2"
 pyo3 = { version = "0.16", features = ["extension-module", "abi3-py37"] }
 
 [build]
-rustdoc-args = [ "--html-in-header", "./docs/rust_header.html" , "--no-deps"]
+rustdoc-args = ["--html-in-header", "./docs/rust_header.html", "--no-deps"]
