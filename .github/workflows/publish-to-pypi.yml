@@ -33,7 +33,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.5
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
 
@@ -41,12 +41,14 @@ jobs:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           path: dist/
 
@@ -68,12 +70,10 @@ jobs:
         # ignore abi3-musllinux false positives
         run: pipx run check-wheel-contents --ignore=W009,W010 dist/
 
-      - uses: pypa/gh-action-pypi-publish@v1.8.12
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           # If you've already pushed this version to TestPyPI, don't fail the job
           skip-existing: true
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
 
   upload_pypi:
@@ -96,13 +96,11 @@ jobs:
       - run: pipx run twine check dist/*
 
       - name: Check wheel contents
-        run: pipx run check-wheel-contents dist/
+        # ignore abi3-musllinux false positives
+        run: pipx run check-wheel-contents --ignore=W009,W010 dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.12
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Upload artifacts to release
         uses: softprops/action-gh-release@v1
