@@ -811,15 +811,16 @@ class CrmCompensated(CRM):
         >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
         >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
         >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
-        >>> pressure = (1000 - prod * 0.1)
+        >>> pressure = 1000 - prod * 0.1
         >>> crm = CrmCompensated(True, "per-producer", "up-to one")
-        >>> crm.fit(prod, inj, time)
+        >>> crm.fit(prod, pressure, inj, time)
         >>> crm.predict()
 
         Starting from a known model:
 
         >>> injection = np.ones((100, 2))
         >>> production = np.ones((1, 1)) * 2
+        >>> pressure = 1000 - production * 0.1
         >>> time = np.arange(100, dtype=float)
         >>> connections = {
         ...     "gains": np.ones((2, 1)) * 0.95,
