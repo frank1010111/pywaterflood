@@ -24,6 +24,7 @@ jobs:
       CIBW_SKIP: "*-musllinux_i686"
       CIBW_BEFORE_ALL_LINUX: "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
+      CIBW_ARCHS_MACOS: "x86_64 arm64"
 
     steps:
       - uses: actions/checkout@v4
