@@ -1,0 +1,32 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Male
+  given-names: Frank
+  orcid: "https://orcid.org/0000-0002-3402-5578"
+contact:
+- family-names: Male
+  given-names: Frank
+  orcid: "https://orcid.org/0000-0002-3402-5578"
+doi: 10.5281/zenodo.10815882
+message: If you use this software, please cite our article in the
+  Journal of Open Source Software.
+preferred-citation:
+  authors:
+  - family-names: Male
+    given-names: Frank
+    orcid: "https://orcid.org/0000-0002-3402-5578"
+  date-published: 2024-03-20
+  doi: 10.21105/joss.06191
+  issn: 2475-9066
+  issue: 95
+  journal: Journal of Open Source Software
+  publisher:
+    name: Open Journals
+  start: 6191
+  title: "Pywaterflood: Well connectivity analysis through
+    capacitance-resistance modeling"
+  type: article
+  url: "https://joss.theoj.org/papers/10.21105/joss.06191"
+  volume: 9
+title: "Pywaterflood: Well connectivity analysis through
+  capacitance-resistance modeling"
