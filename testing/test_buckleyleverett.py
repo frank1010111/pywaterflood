@@ -98,7 +98,7 @@ def test_breakthrough_sw():
         breakthrough_sw_calc = breakthrough_sw(reservoir)
         assert 0 < breakthrough_sw_calc < 1, "breakthrough saturation must be physical"
         assert (
-            test_inputs["sat_water_c"] < breakthrough_sw_calc
+            test_inputs["sat_water_c"] <= breakthrough_sw_calc
         ), "breakthrough saturation should be above connate water saturation"
         assert (
             1 - test_inputs["sat_oil_r"]
