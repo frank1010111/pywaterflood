@@ -6,7 +6,7 @@ pub mod crm;
 use std::f64::consts::PI;
 
 pub use crate::crm::{q_bhp, q_crm_perpair, q_primary};
-use ndarray::ArrayView1;
+use ndarray::{Array1, ArrayView1};
 use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 
@@ -247,6 +247,33 @@ fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
             sat_gas_c,
             n_water,
         ))
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "w_ek")]
+    /// Cumulative water influx from the aquifer
+    ///
+    /// $$\begin{equation}
+    /// W_{ek}(t) = U \sum_{j=0}^{k-1} \Delta p_{j+1}
+    /// W_D(t_{Dk} - t_{Dj}) \quad \text{for } k = 1, 2, \ldots, n
+    /// \end{equation}$$
+    ///
+    fn w_ek_py<'py>(
+        py: Python<'py>,
+        w_d: PyReadonlyArray1<f64>,
+        delta_pressure: PyReadonlyArray1<f64>,
+    ) -> &'py PyArray1<f64> {
+        let w_d = w_d.as_array();
+        let delta_pressure = delta_pressure.as_array();
+
+        let n = w_d.len();
+        let mut w_ek = Array1::zeros(n);
+        for k in 1..n {
+            for j in 0..(k - 1) {
+                w_ek[k] += delta_pressure[j + 1] * w_d[k - j];
+            }
+        }
+        w_ek.into_pyarray(py)
     }
 
     Ok(())

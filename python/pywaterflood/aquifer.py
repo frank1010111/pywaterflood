@@ -6,6 +6,8 @@ from typing import Literal
 import numpy as np
 from numpy.typing import NDArray
 
+from pywaterflood import _core
+
 
 def effective_reservoir_radius(
     reservoir_pore_volume: float, porosity: float, thickness: float, flow_solid_angle: float = 360
@@ -32,11 +34,45 @@ def effective_reservoir_radius(
         msg = f"porosity can't be above 1, it's {porosity}"
         raise ValueError(msg)
     if flow_solid_angle > 360:
-        msg = f"Flow angle can't exceed 360 (a full circle), but it's {flow_solid_angle}"
+        msg = f"flow_solid_angle can't exceed 360 (a full circle), but it's {flow_solid_angle}"
         raise ValueError(msg)
     return math.sqrt(
         5.6146 * reservoir_pore_volume / (math.pi * porosity * thickness * flow_solid_angle / 360)
     )
+
+
+def water_dimensionless(
+    time_d: float | NDArray[np.float64],
+    r_ed: float,
+    method: Literal["marsal-walsh", "klins"] = "marsal-walsh",
+) -> NDArray[np.float64]:
+    """Calculate the radial aquifer dimensionless water influx.
+
+    Parameters
+    ----------
+    time_D : float | NDArray[np.float64]
+        dimensionless time
+    r_ed : float
+        dimensionless radius, :math: r_a/r_o
+    method : Literal str
+        choose 'marsal-walsh' or 'klins' approximation
+
+    Returns
+    -------
+    NDArray[np.float64]
+    """
+    if isinstance(time_d, float):
+        time_d = np.array([time_d])
+
+    if r_ed <= 1:
+        msg = f"r_ed = r_aquifer/r_reservoir must be greater than 1, is {r_ed=}"
+        raise ValueError(msg)
+
+    water_influx_infinite = water_dimensionless_infinite(time_d, method)
+    j_star = r_ed**4 * np.log(r_ed) / (r_ed**2 - 1) + 0.25 * (1 - 3 * r_ed**2)
+    water_influx_finite = 0.5 * (r_ed**2 - 1) * (1 - np.exp(-2 * time_d / j_star))
+    time_d_star = 0.4 * (r_ed**2 - 1)
+    return np.where(time_d < time_d_star, water_influx_infinite, water_influx_finite)
 
 
 def water_dimensionless_infinite(
@@ -55,8 +91,7 @@ def water_dimensionless_infinite(
     NDArray[np.float64]
         dimensionless water influx
     """
-    if isinstance(time_D, float):
-        time_D = np.array([time_D])
+    time_D = np.asarray(time_D)
 
     water_influx = np.zeros_like(time_D)
     if method == "marsal-walsh":
@@ -80,9 +115,7 @@ def water_dimensionless_infinite(
             -1.8436e-9,
             4.8534e-12,
         ]
-        water_influx[med_time] = np.sum(
-            a_coefficients[i] * time_D[med_time] ** i for i in range(8)
-        )
+        water_influx[med_time] = sum(a_coefficients[i] * time_D[med_time] ** i for i in range(8))
         # long time
         long_time = time_D > 100
         water_influx[long_time] = 2 * time_D[long_time] / np.log(time_D[long_time])
@@ -110,17 +143,15 @@ def water_dimensionless_infinite(
     return water_influx
 
 
-def aquifer_production_infinite(
-    delta_pressure: NDArray, t_D: NDArray, aquifer_constant: float
-) -> NDArray:
-    """Calculate cumulative aquifer production assuming infinite boundaries.
+def aquifer_production(delta_pressure: NDArray, w_d: NDArray, aquifer_constant: float) -> NDArray:
+    """Calculate cumulative aquifer production.
 
     Parameters
     ----------
     delta_pressure : NDArray
         change in reservoir pressure
-    t_D : NDArray
-        dimensionless time
+    w_d : NDArray
+        dimensionless water influx
     aquifer_constant : float
         aquifer constant in RB/psi
 
@@ -131,6 +162,5 @@ def aquifer_production_infinite(
     NDArray
         Cumulative production from the aquifer
     """
-    t_D_diff = np.diff(t_D)
-    water_influx_dimensionless = np.cumsum(water_dimensionless_infinite(t_D_diff))
-    return aquifer_constant * delta_pressure * water_influx_dimensionless
+    w_ek = _core.w_ek(w_d, delta_pressure)
+    return aquifer_constant * w_ek
