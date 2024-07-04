@@ -86,8 +86,7 @@ def water_dimensionless(
     -------
     NDArray[np.float64]
     """
-    if isinstance(time_d, float):
-        time_d = np.array([time_d])
+    time_d = np.asarray(time_d)
 
     if r_ed <= 1:
         msg = f"r_ed = r_aquifer/r_reservoir must be greater than 1, is {r_ed=}"
@@ -265,7 +264,7 @@ def get_alphas(r_ed, n_max):
     return np.asarray(roots)
 
 
-def klins_pressure(
+def klins_pressure_dimensionless(
     t_d: NDArray[np.float64], r_ed: float, max_terms: int = 20
 ) -> NDArray[np.float64]:
     """Dimensionless pressure for a finite aquifer over time.
