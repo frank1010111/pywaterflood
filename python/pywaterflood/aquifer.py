@@ -5,6 +5,8 @@ from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.optimize import root_scalar
+from scipy.special import j0, j1, y0, y1
 
 from pywaterflood import _core
 
@@ -72,6 +74,8 @@ def water_dimensionless(
     j_star = r_ed**4 * np.log(r_ed) / (r_ed**2 - 1) + 0.25 * (1 - 3 * r_ed**2)
     water_influx_finite = 0.5 * (r_ed**2 - 1) * (1 - np.exp(-2 * time_d / j_star))
     time_d_star = 0.4 * (r_ed**2 - 1)
+    if time_d.max() >= time_d_star and method == "klins":
+        return klins_water_dimensionless_finite(time_d, r_ed)
     return np.where(time_d < time_d_star, water_influx_infinite, water_influx_finite)
 
 
@@ -164,3 +168,142 @@ def aquifer_production(delta_pressure: NDArray, w_d: NDArray, aquifer_constant: 
     """
     w_ek = _core.w_ek(w_d, delta_pressure)
     return aquifer_constant * w_ek
+
+
+def bessel_roots(r_ed: float, n_max: int) -> NDArray[np.float64]:
+    r"""Find roots of Bessel function in Klins.
+
+    Comes from Klins, 1988, eq 9
+
+    .. math::
+
+        J_1(\beta_n r_{eD}) Y_1(\beta_n) - J_1(\beta_n) Y_1(\beta_n r_{eD})
+
+    Parameters
+    ----------
+    r_ed : float
+        dimensionless reservoir radius, :math:`r_o/r_a`
+    n_max : int
+        number of roots to find
+
+    Returns
+    -------
+    numpy array:
+        roots of the function
+    """
+
+    def root_func(beta):
+        return j1(beta * r_ed) * y1(beta) - j1(beta) * y1(beta * r_ed)
+
+    sample_betas = np.linspace(1e-9, 8 * n_max / r_ed, n_max * 400)
+    zero_crossings = np.array([])
+    while len(zero_crossings) < n_max:
+        sample_betas *= 2
+        zero_crossings = np.where(np.diff(np.sign(root_func(sample_betas))))[0]
+    zero_crossings = zero_crossings[:n_max]
+
+    roots = [root_scalar(root_func, x0=sample_betas[zc]).root for zc in zero_crossings]
+    return np.asarray(roots)
+
+
+def get_alphas(r_ed, n_max):
+    r"""Find roots of Bessel function in Klins.
+
+    Comes from Klins, 1988, eq 16
+
+    .. math::
+
+        J_1(\alpha_n r_{eD}) Y_0(\alpha_n) - Y_1(\alpha_n) J_0(\alpha_n r_{eD})
+
+    Parameters
+    ----------
+    r_ed : float
+        dimensionless reservoir radius, :math:`r_o/r_a`
+    n_max : int
+        number of roots to find
+
+    Returns
+    -------
+    numpy array:
+        roots of the function
+    """
+
+    def root_func(alpha):
+        return j1(alpha * r_ed) * y0(alpha) - y1(alpha * r_ed) * j0(alpha)
+
+    sample_alphas = np.linspace(1e-9, 2 * n_max / r_ed, n_max * 400)
+    zero_crossings = np.array([])
+    while len(zero_crossings) < n_max:
+        sample_alphas *= 2
+        zero_crossings = np.where(np.diff(np.sign(root_func(sample_alphas))))[0]
+    zero_crossings = zero_crossings[:n_max]
+
+    roots = [root_scalar(root_func, x0=sample_alphas[zc]).root for zc in zero_crossings]
+    return np.asarray(roots)
+
+
+def klins_pressure_dimensionless(
+    t_d: NDArray[np.float64], r_ed: float, max_terms: int = 20
+) -> NDArray[np.float64]:
+    """Dimensionless pressure for a finite aquifer over time.
+
+    Parameters
+    ----------
+    t_d : numpy array
+        dimensionless time
+    r_ed : float
+        dimensionless radius
+    max_terms : int, defaults to 20
+        Number of terms in the infinite series to include. Klins used 2.
+
+    Returns
+    -------
+    NDArray :
+        dimensionless pressure
+    """
+    first_term = 2 / (r_ed**2 - 1) * (0.25 + t_d)
+    second_term = -(3 * r_ed**4 - 4 * r_ed**4 * np.log(r_ed) - 2 * r_ed**2 - 1) / (
+        4 * (r_ed**2 - 1) ** 2
+    )
+    third_term = 0.0
+    betas = bessel_roots(r_ed, max_terms)
+    for n in range(max_terms):
+        third_term += (
+            2
+            * (np.exp(-(betas[n] ** 2) * t_d) * j1(betas[n] * r_ed) ** 2)
+            / (betas[n] ** 2 * (j1(betas[n] * r_ed) ** 2 - j1(betas[n]) ** 2))
+        )
+    return first_term + second_term + third_term
+
+
+def klins_water_dimensionless_finite(
+    t_d: NDArray[np.float64], r_ed: float, max_terms: int = 20
+) -> NDArray[np.float64]:
+    """Solve for water influx from Klins' finite radial reservoir.
+
+    Parameters
+    ----------
+    t_d : NDArray[np.float64]
+        dimensionless time
+    r_ed : float
+        dimensionless radius
+    max_terms : int, optional
+        Number of terms in the infinite series to include when approximating the solution,
+        by default 20
+
+    Returns
+    -------
+    NDArray[np.float64]
+        :math:`W_d`, dimensionless water influx
+    """
+    first_term = 0.5 * (r_ed**2 - 1)
+    second_term = 0
+    alphas = get_alphas(r_ed, max_terms)
+    for n in range(1, max_terms):
+        second_term += (
+            -2
+            * np.exp(-(alphas[n] ** 2) * t_d)
+            * j1(alphas[n] * r_ed) ** 2
+            / (alphas[n] ** 2 * (j0(alphas[n]) ** 2 - j1(alphas[n] * r_ed) ** 2))
+        )
+    return first_term + second_term
