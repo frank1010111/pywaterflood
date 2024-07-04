@@ -1,12 +1,19 @@
-"""pywaterflood: A package for explaining and predicting waterflood performance.
+"""``pywaterflood`` A package for explaining and predicting waterflood performance.
+
+Pywaterflood is focused on numerical modeling of oil reservoirs in secondary or
+tertiary recovery. These include methods for capacitance resistance modeling,
+the multiwell productivity index, Buckley-Leverett displacement, and aquifer drive.
 
 Provides
---------
-CRM : a class for performing capacitance resistance modeling
-calc_gains_homogeneous : a function using the multiwell productivity index
-translate_location : a function for moving things from the real world
-  into dimensionless-land
+========
+
+``CRM`` a class for performing capacitance resistance modeling
+
+``calc_gains_homogeneous`` a function using the multiwell productivity index
+
+``translate_location`` a function for moving things from the real world into dimensionless-land
 """
+
 from __future__ import annotations
 
 import sys

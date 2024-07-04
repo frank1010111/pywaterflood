@@ -1,3 +1,24 @@
+"""Functions for estimating aquifer influx using van Everdingen-Hurst models.
+
+Through some accident of nature, oil tends to migrate through aquifers from where it was generated
+to traps that eventually become the reservoirs we know and love. This means that almost all
+reservoirs have associated aquifers. As oil is produced from these reservoirs, the aquifer water
+enters the reservoir, providing pressure support and sometimes being co-produced. van Everdingen
+and Hurst set out to model the reservoir-aquifer interaction in the 1940s. At the time, their
+calculations were provided to petroleum engineers in the form of tables, but with modern computing,
+we can improve upon that.
+
+
+Further reading
+---------------
+
+`Petrowiki on water influx models <https://petrowiki.spe.org/Water_influx_models>`_
+
+van Everdingen and Hurst, 1949, https://doi.org/10.2118/949305-G
+
+Klins et al, 1988, http://dx.doi.org/10.2118/15433-PA
+"""
+
 from __future__ import annotations
 
 import math
@@ -46,16 +67,18 @@ def effective_reservoir_radius(
 def water_dimensionless(
     time_d: float | NDArray[np.float64],
     r_ed: float,
-    method: Literal["marsal-walsh", "klins"] = "marsal-walsh",
+    method: Literal["marsal-walsh", "klins"] = "klins",
 ) -> NDArray[np.float64]:
-    """Calculate the radial aquifer dimensionless water influx.
+    r"""Calculate the radial aquifer dimensionless water influx.
+
+    This acts as if the aquifer were infinite-acting if :math:`\max t_d < 0.4 (r_{ed}^2 - 1)`
 
     Parameters
     ----------
     time_D : float | NDArray[np.float64]
         dimensionless time
     r_ed : float
-        dimensionless radius, :math: r_a/r_o
+        dimensionless radius, :math:`r_a/r_o`
     method : Literal str
         choose 'marsal-walsh' or 'klins' approximation
 
@@ -148,7 +171,7 @@ def water_dimensionless_infinite(
 
 
 def aquifer_production(delta_pressure: NDArray, w_d: NDArray, aquifer_constant: float) -> NDArray:
-    """Calculate cumulative aquifer production.
+    r"""Calculate cumulative aquifer production.
 
     Parameters
     ----------
@@ -159,7 +182,7 @@ def aquifer_production(delta_pressure: NDArray, w_d: NDArray, aquifer_constant: 
     aquifer_constant : float
         aquifer constant in RB/psi
 
-        $1.119 hfr^2_o /phi c_t$
+        :math:`1.119 hfr^2_o \phi c_t`
 
     Returns
     -------
@@ -242,7 +265,7 @@ def get_alphas(r_ed, n_max):
     return np.asarray(roots)
 
 
-def klins_pressure_dimensionless(
+def klins_pressure(
     t_d: NDArray[np.float64], r_ed: float, max_terms: int = 20
 ) -> NDArray[np.float64]:
     """Dimensionless pressure for a finite aquifer over time.
