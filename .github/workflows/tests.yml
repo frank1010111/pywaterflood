@@ -13,13 +13,17 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
         with:
-          python-version: 3.9
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
       - name: Lint with pre-commit
-        run: pipx run pre-commit run --all-files
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --hook-stage manual --all-files
 
   tests:
     name: ${{ matrix.os }} / ${{ matrix.python-version }}
@@ -27,19 +31,24 @@ jobs:
     strategy:
       matrix:
         os: [Ubuntu, MacOS, windows]
-        python-version: [3.7, "3.12"]
+        python-version: ["3.8", "3.12"]
+        include:
+          - python-version: pypy-3.10
+            os: Ubuntu
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - uses: dtolnay/rust-toolchain@stable
       - name: Test with nox
         run: pipx run nox -s tests
       - name: "Upload coverage to Codecov"
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          token: ${{ secrets.CODECOV_TOKEN }}

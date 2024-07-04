@@ -9,9 +9,12 @@ Provides
 
 ``CRM`` a class for performing capacitance resistance modeling
 
+``CrmCompensated`` a class for performing pressure-compensated CRM
+
 ``calc_gains_homogeneous`` a function using the multiwell productivity index
 
 ``translate_location`` a function for moving things from the real world into dimensionless-land
+For more information on these functions and more, check the submodule API documentation.
 """
 
 from __future__ import annotations

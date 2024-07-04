@@ -2,14 +2,15 @@
 
 [![PyPI version](https://badge.fury.io/py/pywaterflood.svg)](https://badge.fury.io/py/pywaterflood)
 [![Conda](https://img.shields.io/conda/v/conda-forge/pywaterflood)](https://anaconda.org/conda-forge/pywaterflood)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pywaterflood)](https://pypi.org/project/pywaterflood/)
+
 [![Documentation Status](https://readthedocs.org/projects/pywaterflood/badge/?version=latest)](https://pywaterflood.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/234408267.svg)](https://zenodo.org/badge/latestdoi/234408267)
+[![status](https://joss.theoj.org/papers/2fdffa96e936553d289e622e5e12388c/status.svg)](https://joss.theoj.org/papers/2fdffa96e936553d289e622e5e12388c)
 
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![codecov](https://codecov.io/gh/frank1010111/pywaterflood/branch/master/graph/badge.svg?token=3XRGLKO7T8)](https://codecov.io/gh/frank1010111/pywaterflood)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Python version](https://img.shields.io/pypi/pyversions/pywaterflood)](https://www.python.org/downloads/)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/pywaterflood)](https://pypi.org/project/pywaterflood/)
 
 `pywaterflood` provides tools for capacitance resistance modeling, a
 physics-inspired model for estimating well connectivity between injectors and
@@ -57,6 +58,7 @@ want to try it out online before installing it on your computer, you can run
 
 ### A simple example
 
+    import numpy as np
     import pandas as pd
     from pywaterflood import CRM
 
@@ -70,6 +72,10 @@ want to try it out online before installing it on your computer, you can run
     q_hat = crm.predict()
     residuals = crm.residual()
 
+    print("MAE by well:", np.round(np.abs(residuals).mean(axis=0), 2), "barrels")
+    print("MAPE by well:", np.round(np.mean(np.abs(residuals) / prod * 100, axis=0), 2), "percent")
+    print("RMSE by well:", np.round(np.sqrt(np.sum(residuals**2, axis=0)), 2))
+
 ## Contributing
 
 Contributions are extremely welcome! Have [an issue to report](https://github.com/frank1010111/bluebonnet/issues/new)?
@@ -80,6 +86,16 @@ to help you set up. Discussions could start anytime at
 `pywaterflood` uses Rust for computation and python as the high level interface.
 Luckily, [maturin](https://www.maturin.rs/) is a very convenient tool for working
 with mixed Python-Rust projects.
+
+Running tests, building the package, linting to conform to code standards, and building the documentation are all handled by [nox](https://nox.thea.codes).
+
+### Running tests
+
+The [guide for getting started](https://github.com/frank1010111/pywaterflood/blob/master/CONTRIBUTING.md#get-started), has instructions for installing rust, python, and nox. At that point, both the lint and unit test sessions are run with the command
+
+```
+nox
+```
 
 ## License
 

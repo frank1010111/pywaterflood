@@ -46,6 +46,25 @@ def trained_model(reservoir_simulation_data):
     return _trained_model
 
 
+@pytest.fixture()
+def trained_compensated_model(reservoir_simulation_data):
+    def _trained_model(*args, **kwargs):
+        crm = CrmCompensated(*args, **kwargs)
+        crm.injection, crm.production, crm.time = reservoir_simulation_data
+        crm.pressure = np.random.default_rng(42).poisson(100, crm.production.shape).astype(float)
+        crm.gains = np.genfromtxt(data_dir + "gains.csv", delimiter=",")
+        if crm.tau_selection == "per-pair":
+            crm.tau = np.genfromtxt(data_dir + "taus_per-pair.csv", delimiter=",")
+        else:
+            crm.tau = np.genfromtxt(data_dir + "taus.csv", delimiter=",")
+        crm.gains_producer = np.genfromtxt(data_dir + "gain_producer.csv", delimiter=",")
+        crm.tau_producer = np.genfromtxt(data_dir + "tau_producer.csv", delimiter=",")
+        crm.gain_pressure = np.ones([crm.production.shape[1], crm.production.shape[1]], dtype="f8")
+        return crm
+
+    return _trained_model
+
+
 def test_q_primary(reservoir_simulation_data):
     "primary production."
     _, production, time = reservoir_simulation_data
@@ -145,7 +164,7 @@ class TestInstantiate:
 @pytest.mark.parametrize("primary", primary)
 class TestPredict:
     def test_predict(self, reservoir_simulation_data, trained_model, primary, tau_selection):
-        injection, production, time = reservoir_simulation_data
+        injection, _production, time = reservoir_simulation_data
         crm = trained_model(primary=primary, tau_selection=tau_selection)
 
         prediction1 = crm.predict()
@@ -164,10 +183,40 @@ class TestPredict:
             rel=1e-2,
         )
 
+    def test_predict_untrained(self, reservoir_simulation_data, primary, tau_selection):
+        """Test predicting from gains in as a guess with no prior fitting."""
+        crm = CRM(primary=primary, tau_selection=tau_selection)
+        injection, production, time = reservoir_simulation_data
+        n_inj = injection.shape[1]
+        n_prod = production.shape[1]
+        if tau_selection == "per-producer":
+            tau = np.full(n_prod, 21.1)
+        else:
+            tau = np.full((n_inj, n_prod), 21.1)
+        connections = {
+            "gains": np.ones((n_inj, n_prod)),
+            "tau": tau,
+            "gains_producer": np.ones(n_prod),
+            "tau_producer": np.full(n_prod, 20.0),
+        }
+        prediction = crm.predict(injection, time, connections=connections, production=production)
+        assert np.all(prediction >= 0)
+        if not primary:
+            connections = {
+                "gains": np.ones((n_inj, n_prod)),
+                "tau": tau,
+            }
+            prediction = crm.predict(
+                injection, time, connections=connections, production=production
+            )
+            assert np.all(prediction >= 0)
+
     def test_predict_fails(self, reservoir_simulation_data, trained_model, primary, tau_selection):
         injection, production, time = reservoir_simulation_data
         crm = trained_model(primary, tau_selection)
-        with pytest.raises(TypeError, match="arguments"):
+        with pytest.raises(
+            TypeError, match="Either both or neither of injection or time must be specified"
+        ):
             crm.predict(injection)
         with pytest.raises(ValueError, match="number of steps"):
             crm.predict(injection, time[:-1])
@@ -335,8 +384,8 @@ class TestExport:
 
 
 @pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
-class TestBhp:
-    def test_init_bhp(self, primary, tau_selection, constraints):
+class TestCompensated:
+    def test_init_compensated(self, primary, tau_selection, constraints):
         crm = CrmCompensated(primary, tau_selection, constraints)
         assert crm.primary == primary
 
@@ -372,6 +421,8 @@ class TestBhp:
         prediction1 = crm.predict()
         prediction2 = crm.predict(injection, time)
         assert prediction1 == pytest.approx(prediction2)
+        prediction3 = crm.predict(injection, time, pressure=pressure)
+        assert prediction3 == pytest.approx(prediction1)
 
     def test_fit_fails(
         self,
@@ -390,3 +441,81 @@ class TestBhp:
             crm.fit(production, pressure[:-1], injection, None)
         with pytest.raises(ValueError, match="injection and pressure"):
             crm.fit(None, pressure[:-1], injection, None)
+
+
+@pytest.mark.parametrize("tau_selection", tau_selection)
+@pytest.mark.parametrize("primary", primary)
+class TestPredictCompensated:
+    def test_predict(
+        self, reservoir_simulation_data, trained_compensated_model, primary, tau_selection
+    ):
+        injection, _production, time = reservoir_simulation_data
+        crm = trained_compensated_model(primary=primary, tau_selection=tau_selection)
+
+        prediction1 = crm.predict()
+        prediction2 = crm.predict(injection, time)
+        prediction3 = crm.predict(connections={"gains": crm.gains})
+        assert prediction1 == pytest.approx(prediction2, abs=1.0)
+        assert prediction2 == pytest.approx(prediction3, abs=1)
+
+        # primary_str = "primary" if primary else "noprimary"
+        # assert prediction1 == pytest.approx(
+        #     np.genfromtxt(
+        #         f"{data_dir}prediction_{primary_str}_{tau_selection}.csv", delimiter=","
+        #     ),
+        #     abs=5.0,
+        #     rel=1e-2,
+        # )
+
+    def test_predict_untrained(self, reservoir_simulation_data, primary, tau_selection):
+        """Test predicting from gains in as a guess with no prior fitting."""
+        crm = CRM(primary=primary, tau_selection=tau_selection)
+        injection, production, time = reservoir_simulation_data
+        n_inj = injection.shape[1]
+        n_prod = production.shape[1]
+        if tau_selection == "per-producer":
+            tau = np.full(n_prod, 21.1)
+        else:
+            tau = np.full((n_inj, n_prod), 21.1)
+        connections = {
+            "gains": np.ones((n_inj, n_prod)),
+            "tau": tau,
+            "gains_producer": np.ones(n_prod),
+            "tau_producer": np.full(n_prod, 20.0),
+        }
+        prediction = crm.predict(injection, time, connections=connections, production=production)
+        assert np.all(prediction >= 0)
+        if not primary:
+            connections = {
+                "gains": np.ones((n_inj, n_prod)),
+                "tau": tau,
+            }
+            prediction = crm.predict(
+                injection, time, connections=connections, production=production
+            )
+            assert np.all(prediction >= 0)
+
+    def test_predict_fails(
+        self, reservoir_simulation_data, trained_compensated_model, primary, tau_selection
+    ):
+        injection, _production, time = reservoir_simulation_data
+        crm = trained_compensated_model(primary, tau_selection)
+        with pytest.raises(
+            TypeError, match="Either both or neither of injection or time must be specified"
+        ):
+            crm.predict(injection)
+        with pytest.raises(ValueError, match="number of steps"):
+            crm.predict(injection, time[:-1])
+
+    def test_residual(
+        self, reservoir_simulation_data, trained_compensated_model, primary, tau_selection
+    ):
+        injection, production, time = reservoir_simulation_data
+        crm = trained_compensated_model(primary=primary, tau_selection=tau_selection)
+        q_hat = crm.predict(injection, time)
+        resid1 = production - q_hat
+        resid2 = crm.residual(production, injection, time)
+        resid3 = crm.residual()
+        assert resid1 == pytest.approx(resid2)
+        assert resid1 == pytest.approx(resid3)
+        assert resid1.shape == (len(time), production.shape[-1])
