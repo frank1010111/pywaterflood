@@ -68,3 +68,8 @@ def test_water_dimensionless(method):
 
     with pytest.raises(ValueError, match="r_ed"):
         water_dimensionless(t_d2, r_ed=0.9, method=method)
+
+
+def test_water_dimensionless_invalid():
+    with pytest.raises(ValueError, match="method must be"):
+        water_dimensionless(3.0, 3.0, method="korval")
