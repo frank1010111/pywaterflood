@@ -6,6 +6,7 @@ from copy import copy
 import numpy as np
 import pytest
 from pywaterflood.aquifer import (
+    aquifer_production,
     effective_reservoir_radius,
     water_dimensionless,
     water_dimensionless_infinite,
@@ -41,6 +42,21 @@ def test_effective_radius_checks(var, invalid_arg):
     match = "domain" if invalid_arg < 0 else var
     with pytest.raises(ValueError, match=match):
         effective_reservoir_radius(**test_inputs)
+
+
+@pytest.mark.parametrize("method", ["marsal-walsh", "klins"])
+def test_water_aquifer_prod(method):
+    n_times = 20
+    t_d = np.arange(n_times, dtype=np.float64)
+    delta_pressure = np.random.default_rng(3245).normal(0, 0.25, n_times)
+    for r_ed in [1.1, 3, 40]:
+        aquifer_production(
+            delta_pressure,
+            t_d,
+            r_ed,
+            method=method,
+            aquifer_constant=1.0,
+        )
 
 
 @pytest.mark.parametrize("method", ["marsal-walsh", "klins"])
