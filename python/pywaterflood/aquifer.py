@@ -131,8 +131,6 @@ def water_dimensionless(
     j_star = r_ed**4 * np.log(r_ed) / (r_ed**2 - 1) + 0.25 * (1 - 3 * r_ed**2)
     water_influx_finite = 0.5 * (r_ed**2 - 1) * (1 - np.exp(-2 * time_d / j_star))
     time_d_star = 0.4 * (r_ed**2 - 1)
-    if time_d.max() >= time_d_star and method == "klins":
-        return klins_water_dimensionless_finite(time_d, r_ed)
     return np.where(time_d < time_d_star, water_influx_infinite, water_influx_finite)
 
 
@@ -204,7 +202,9 @@ def water_dimensionless_infinite(
     return water_influx
 
 
-def get_bessel_roots(r_ed: float, n_max: int, root_choice="beta") -> NDArray[np.float64]:
+def get_bessel_roots(
+    r_ed: float, n_max: int, root_choice: Literal["alpha", "beta"] = "beta"
+) -> NDArray[np.float64]:
     r"""Find roots of Bessel function in Klins.
 
     Comes from Klins, 1988, eq 9,
@@ -233,6 +233,13 @@ def get_bessel_roots(r_ed: float, n_max: int, root_choice="beta") -> NDArray[np.
     -------
     numpy array:
         roots of the function
+
+    Reference
+    ---------
+    Klins, M. A., Bouchard, A. J., and C. L. Cable.
+    "A Polynomial Approach to the van Everdingen-Hurst Dimensionless Variables for
+    Water Encroachment." SPE Res Eng 3 (1988): 320-326.
+    doi: <https://doi.org/10.2118/15433-PA>
     """
 
     def root_func_beta(beta):
@@ -284,7 +291,7 @@ def klins_pressure_dimensionless(
         4 * (r_ed**2 - 1) ** 2
     )
     third_term = 0.0
-    betas = get_bessel_roots(r_ed, max_terms)
+    betas = get_bessel_roots(r_ed, max_terms, "beta")
     for n in range(max_terms):
         third_term += (
             2
@@ -315,8 +322,8 @@ def klins_water_dimensionless_finite(
         :math:`W_d`, dimensionless water influx
     """
     first_term = 0.5 * (r_ed**2 - 1)
-    second_term = 0
-    alphas = get_bessel_roots(r_ed, max_terms)
+    second_term = np.zeros_like(t_d)
+    alphas = get_bessel_roots(r_ed, max_terms, "alpha")
     for n in range(1, max_terms):
         second_term += (
             -2
