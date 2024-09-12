@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from copy import copy
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -9,6 +10,7 @@ from pywaterflood.aquifer import (
     aquifer_production,
     effective_reservoir_radius,
     get_bessel_roots,
+    klins_pressure_dimensionless,
     klins_water_dimensionless_finite,
     water_dimensionless,
     water_dimensionless_infinite,
@@ -47,7 +49,7 @@ def test_effective_radius_checks(var, invalid_arg):
 
 
 @pytest.mark.parametrize("method", ["marsal-walsh", "klins"])
-def test_water_aquifer_prod(method):
+def test_water_aquifer_prod(method: Literal["marsal-walsh"] | Literal["klins"]):
     n_times = 20
     t_d = np.arange(n_times, dtype=np.float64)
     delta_pressure = np.random.default_rng(3245).normal(0, 0.25, n_times)
@@ -62,7 +64,7 @@ def test_water_aquifer_prod(method):
 
 
 @pytest.mark.parametrize("method", ["marsal-walsh", "klins"])
-def test_water_dimensionless(method):
+def test_water_dimensionless(method: Literal["marsal-walsh"] | Literal["klins"]):
     t_d = 5
     r_ed_infinite = 1e9
     wd_finite = water_dimensionless(t_d, r_ed_infinite, method)
@@ -142,6 +144,14 @@ def test_get_bessel_roots():
 def test_bessel_fails():
     with pytest.raises(ValueError, match="root choice"):
         get_bessel_roots(1.5, 2, "charlie")
+
+
+def test_klins_pressure():
+    """Test Klins Appendix G."""
+    t_d = 20.0
+    r_ed = 10.0
+    p_d = klins_pressure_dimensionless(t_d, r_ed)
+    assert pytest.approx(1.9690, rel=1e-3) == p_d
 
 
 def test_test_water_dimensionless_finite_klins():
