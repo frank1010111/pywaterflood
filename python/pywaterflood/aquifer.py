@@ -324,11 +324,11 @@ def klins_water_dimensionless_finite(
     first_term = 0.5 * (r_ed**2 - 1)
     second_term = np.zeros_like(t_d)
     alphas = get_bessel_roots(r_ed, max_terms, "alpha")
-    for n in range(1, max_terms):
+    for n in range(max_terms):
         second_term += (
             -2
             * np.exp(-(alphas[n] ** 2) * t_d)
-            * j1(alphas[n] * r_ed) ** 2
+            * (j1(alphas[n] * r_ed) ** 2)
             / (alphas[n] ** 2 * (j0(alphas[n]) ** 2 - j1(alphas[n] * r_ed) ** 2))
         )
     return first_term + second_term
