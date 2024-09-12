@@ -2,6 +2,7 @@
 
 pub mod buckleyleverett;
 
+pub mod aquifer;
 pub mod crm;
 use std::f64::consts::PI;
 
