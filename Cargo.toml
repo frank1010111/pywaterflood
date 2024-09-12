@@ -10,7 +10,7 @@ name = "_core"
 crate-type = ["cdylib"]
 
 [dependencies]
-ndarray = "0.15.6"
+ndarray = "0.16.1"
 numpy = "0.16.2"
 puruspe = "0.2.4"
 peroxide = "0.37.7"
