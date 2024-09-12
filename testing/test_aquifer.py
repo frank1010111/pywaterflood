@@ -9,6 +9,7 @@ from pywaterflood.aquifer import (
     aquifer_production,
     effective_reservoir_radius,
     get_bessel_roots,
+    klins_water_dimensionless_finite,
     water_dimensionless,
     water_dimensionless_infinite,
 )
@@ -136,3 +137,16 @@ def test_get_bessel_roots():
         )
         beta_fit = get_bessel_roots(r_ed, 2, "beta")
         assert pytest.approx(np.array([beta1, beta2]), rel=1e-2) == beta_fit
+
+
+def test_bessel_fails():
+    with pytest.raises(ValueError, match="root choice"):
+        get_bessel_roots(1.5, 2, "charlie")
+
+
+def test_test_water_dimensionless_finite_klins():
+    """Follow Appendix H from Klins."""
+    t_d = 20.0
+    r_ed = 10.0
+    q_d = klins_water_dimensionless_finite(t_d, r_ed, 2)
+    assert pytest.approx(12.2640) == q_d
