@@ -8,6 +8,7 @@ import pytest
 from pywaterflood.aquifer import (
     aquifer_production,
     effective_reservoir_radius,
+    get_bessel_roots,
     water_dimensionless,
     water_dimensionless_infinite,
 )
@@ -89,3 +90,49 @@ def test_water_dimensionless(method):
 def test_water_dimensionless_invalid():
     with pytest.raises(ValueError, match="method must be"):
         water_dimensionless(3.0, 3.0, method="korval")
+
+
+def test_get_bessel_roots():
+    """Compare the numerically calculated Bessel roots with the regression.
+
+    Source
+    ------
+    Klins, M. A., Bouchard, A. J., and C. L. Cable.
+    "A Polynomial Approach to the van Everdingen-Hurst Dimensionless Variables for
+    Water Encroachment." SPE Res Eng 3 (1988): 320-326.
+    doi: https://doi.org/10.2118/15433-PA
+    """
+    b_alpha1 = [-0.00222107, -0.627638, 6.277915, -2.734405, 1.2708, -1.100417]
+    b_alpha2 = [-0.00796608, -1.85408, 18.71169, -2.758326, 4.829162, -1.009021]
+    b_beta1 = [-0.00870415, -1.08984, 12.4458, -2.8446, 3.4234, -0.949162]
+    b_beta2 = [-0.0191642, -2.47644, 25.3343, -2.73054, 6.13184, -0.939529]
+    for r_ed in (2, 5, 10, 15, 20):
+        alpha1 = (
+            b_alpha1[0]
+            + b_alpha1[1] / math.sinh(r_ed)
+            + b_alpha1[2] * (r_ed) ** b_alpha1[3]
+            + b_alpha1[4] * r_ed ** b_alpha1[5]
+        )
+        alpha2 = (
+            b_alpha2[0]
+            + b_alpha2[1] / math.sinh(r_ed)
+            + b_alpha2[2] * (r_ed) ** b_alpha2[3]
+            + b_alpha2[4] * r_ed ** b_alpha2[5]
+        )
+        alpha_fit = get_bessel_roots(r_ed, 2, "alpha")
+        assert pytest.approx(np.array([alpha1, alpha2]), rel=1e-2) == alpha_fit
+
+        beta1 = (
+            b_beta1[0]
+            + b_beta1[1] / math.sinh(r_ed)
+            + b_beta1[2] * r_ed ** b_beta1[3]
+            + b_beta1[4] * r_ed ** b_beta1[5]
+        )
+        beta2 = (
+            b_beta2[0]
+            + b_beta2[1] / math.sinh(r_ed)
+            + b_beta2[2] * r_ed ** b_beta2[3]
+            + b_beta2[4] * r_ed ** b_beta2[5]
+        )
+        beta_fit = get_bessel_roots(r_ed, 2, "beta")
+        assert pytest.approx(np.array([beta1, beta2]), rel=1e-2) == beta_fit
