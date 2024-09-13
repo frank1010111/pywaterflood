@@ -9,14 +9,14 @@ use std::f64::consts::PI;
 pub use crate::crm::{q_bhp, q_crm_perpair, q_primary};
 use ndarray::{Array1, ArrayView1};
 use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
-use pyo3::{pymodule, types::PyModule, PyResult, Python};
+use pyo3::{pymodule, types::PyModule, Bound, PyResult, Python};
 
 pub use crate::buckleyleverett::{
     breakthrough_sw, fractional_flow_water_flat, k_rel_oil, k_rel_water, water_front_velocity,
 };
 
 #[pymodule]
-fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _core<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
     fn calc_a_ij(x_i: f64, y_i: f64, x_j: f64, y_j: f64, y_d: f64, m: ArrayView1<u64>) -> f64 {
         let first_term = 2.0
             * PI
@@ -64,11 +64,11 @@ fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
         time: PyReadonlyArray1<f64>,
         gain_producer: f64,
         tau_producer: f64,
-    ) -> &'py PyArray1<f64> {
+    ) -> Bound<'py, PyArray1<f64>> {
         let production = production.as_array();
         let time = time.as_array();
         let q = q_primary(production, time, gain_producer, tau_producer);
-        q.into_pyarray(py)
+        q.into_pyarray_bound(py)
     }
 
     #[pyfn(m)]
@@ -79,13 +79,13 @@ fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
         time: PyReadonlyArray1<f64>,
         gains: PyReadonlyArray1<'_, f64>,
         taus: PyReadonlyArray1<'_, f64>,
-    ) -> &'py PyArray1<f64> {
+    ) -> Bound<'py, PyArray1<f64>> {
         let injection = injection.as_array();
         let time = time.as_array();
         let gains = gains.as_array();
         let taus = taus.as_array();
         let q = q_crm_perpair(injection, time, gains, taus);
-        q.into_pyarray(py)
+        q.into_pyarray_bound(py)
     }
 
     #[pyfn(m)]
@@ -95,12 +95,12 @@ fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
         pressure_local: PyReadonlyArray1<'_, f64>,
         pressure: PyReadonlyArray2<'_, f64>,
         v_matrix: PyReadonlyArray1<'_, f64>,
-    ) -> &'py PyArray1<f64> {
+    ) -> Bound<'py, PyArray1<f64>> {
         let pressure_local = pressure_local.as_array();
         let pressure = pressure.as_array();
         let v_matrix = v_matrix.as_array();
         let q = q_bhp(pressure_local, pressure, v_matrix);
-        q.into_pyarray(py)
+        q.into_pyarray_bound(py)
     }
 
     #[pyfn(m)]
@@ -263,7 +263,7 @@ fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
         py: Python<'py>,
         w_d: PyReadonlyArray1<f64>,
         delta_pressure: PyReadonlyArray1<f64>,
-    ) -> &'py PyArray1<f64> {
+    ) -> Bound<'py, PyArray1<f64>> {
         let w_d = w_d.as_array();
         let delta_pressure = delta_pressure.as_array();
 
@@ -274,7 +274,7 @@ fn _core(_py: Python, m: &PyModule) -> PyResult<()> {
                 w_ek[k] += delta_pressure[j + 1] * w_d[k - j];
             }
         }
-        w_ek.into_pyarray(py)
+        w_ek.into_pyarray_bound(py)
     }
 
     Ok(())
