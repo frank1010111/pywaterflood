@@ -10,11 +10,11 @@ name = "_core"
 crate-type = ["cdylib"]
 
 [dependencies]
-ndarray = "0.15.6"
-numpy = "0.16.2"
+numpy = "0.21"
+ndarray = ">= 0.13, < 0.16"
 puruspe = "0.2.4"
-peroxide = "0.37.7"
-pyo3 = { version = "0.16", features = ["extension-module", "abi3-py37"] }
+peroxide = "0.37.6"
+pyo3 = { version = "0.21", features = ["extension-module", "abi3-py37"] }
 
 [build]
 rustdoc-args = ["--html-in-header", "./docs/rust_header.html", "--no-deps"]
