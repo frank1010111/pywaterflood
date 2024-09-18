@@ -1,4 +1,5 @@
 """Nox sessions for linting, docs, and testing."""
+
 from __future__ import annotations
 
 import argparse
@@ -11,6 +12,7 @@ import nox
 DIR = Path(__file__).parent.resolve()
 
 nox.options.sessions = ["lint", "tests"]
+nox.options.default_venv_backend = "uv|virtualenv"
 
 
 @nox.session
@@ -26,9 +28,7 @@ def lint(session: nox.Session) -> None:
 @nox.session
 def tests(session: nox.Session) -> None:
     """Run the unit and regular tests."""
-    session.install("maturin")
-    # You have to run `maturin develop` to avoid this: https://github.com/PyO3/maturin/issues/490
-    session.run("maturin", "develop", "--release", "--extras=test")
+    session.install(".[test]")
     session.run(
         "pytest",
         "--cov=pywaterflood",
