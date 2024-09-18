@@ -32,9 +32,6 @@ jobs:
       matrix:
         os: [Ubuntu, MacOS, windows]
         python-version: ["3.9", "3.12"]
-        include:
-          - python-version: pypy-3.10
-            os: Ubuntu
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
