@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-12, macos-14]
+        os: [ubuntu-22.04, windows-2022, macos-13, macos-14]
     env:
       # rust is not available for musl linux on i686. see https://github.com/rust-lang/rustup/issues/2984
       CIBW_SKIP: "*-musllinux_i686"
