@@ -1,8 +1,8 @@
 [project]
 name = "pywaterflood"
-version = "0.3.3"
+version = "0.3.4"
 description = "Physics-inspired waterflood performance modeling"
-authors = [{ name = "Frank Male", email = "frmale@utexas.edu" }]
+authors = [{ name = "Frank Male", email = "frank.male@psu.edu" }]
 license = { file = "LICENSE" }
 readme = "README.md"
 classifiers = [
