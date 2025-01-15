@@ -108,7 +108,7 @@ isort.required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20", "D"] # testing don't need docs
 "__init__.py" = ["F401"]  # imported but unused
-"*.ipynb" = ["T201"] # print
+"*.ipynb" = ["T201", "I002"] # print, required-imports
 
 [tool.pytest.ini_options]
 minversion = "6.0"
