@@ -1,3 +1,3 @@
 [codespell]
-skip = docs/**.ipynb
+skip = docs/**.ipynb,paper/paper.bib
 ignore-words-list = crate,mape
