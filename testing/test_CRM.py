@@ -21,7 +21,7 @@ test_args = list(product(primary, tau_selection, constraints))
 data_dir = "testing/data/"
 
 
-@pytest.fixture()
+@pytest.fixture
 def reservoir_simulation_data():
     injection = np.genfromtxt(data_dir + "injection.csv", delimiter=",")
     production = np.genfromtxt(data_dir + "production.csv", delimiter=",")
@@ -29,7 +29,7 @@ def reservoir_simulation_data():
     return injection, production, time
 
 
-@pytest.fixture()
+@pytest.fixture
 def trained_model(reservoir_simulation_data):
     def _trained_model(*args, **kwargs):
         crm = CRM(*args, **kwargs)
@@ -46,7 +46,7 @@ def trained_model(reservoir_simulation_data):
     return _trained_model
 
 
-@pytest.fixture()
+@pytest.fixture
 def trained_compensated_model(reservoir_simulation_data):
     def _trained_model(*args, **kwargs):
         crm = CrmCompensated(*args, **kwargs)
@@ -146,7 +146,7 @@ def test_q_bhp():
     assert np.allclose(q[-1], -2), "pressure increase -> drop production"
 
 
-@pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
+@pytest.mark.parametrize(("primary", "tau_selection", "constraints"), test_args)
 class TestInstantiate:
     def test_init(self, primary, tau_selection, constraints):
         CRM(primary, tau_selection, constraints)
@@ -250,7 +250,7 @@ class TestPredict:
         assert resid1.shape == (len(time), production.shape[-1])
 
 
-@pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
+@pytest.mark.parametrize(("primary", "tau_selection", "constraints"), test_args)
 class TestFit:
     def test_validate_timeseries(
         self, reservoir_simulation_data, primary, tau_selection, constraints
@@ -308,7 +308,7 @@ class TestFit:
         with pytest.raises(ValueError, match="constrain"):
             crm.fit(production, injection, time)
 
-    @pytest.mark.slow()
+    @pytest.mark.slow
     @pytest.mark.parametrize("random", [True, False])
     def test_fit_serial(
         self, reservoir_simulation_data, primary, tau_selection, constraints, random
@@ -339,7 +339,7 @@ class TestFit:
             random=random,
         )
 
-    @pytest.mark.slow()
+    @pytest.mark.slow
     @pytest.mark.parametrize("random", [True, False])
     def test_fit_initial_guess(
         self, reservoir_simulation_data, primary, tau_selection, constraints, random
@@ -383,7 +383,7 @@ class TestExport:
             crm.to_pickle()
 
 
-@pytest.mark.parametrize("primary,tau_selection,constraints", test_args)
+@pytest.mark.parametrize(("primary", "tau_selection", "constraints"), test_args)
 class TestCompensated:
     def test_init_compensated(self, primary, tau_selection, constraints):
         crm = CrmCompensated(primary, tau_selection, constraints)

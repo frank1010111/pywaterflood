@@ -14,7 +14,7 @@ from pywaterflood.multiwellproductivity import (
 raw_locs = pd.DataFrame()
 
 
-@pytest.fixture()
+@pytest.fixture
 def locations():
     "Well locations for an inverted 5-spot."
     xy = [(1, 1), (20, 1), (1, 20), (20, 20), (10.5, 10.5)]

@@ -39,8 +39,8 @@ invalid_reservoir_inputs = [
 
 def test_reservoir_valid():
     valid_reservoir = Reservoir(**valid_reservoir_inputs)
-    for key in valid_reservoir_inputs:
-        assert valid_reservoir_inputs[key] == getattr(valid_reservoir, key)
+    for key, val in valid_reservoir_inputs.items():
+        assert getattr(valid_reservoir, key) == val
 
 
 @pytest.mark.parametrize(("var", "invalid_arg"), invalid_reservoir_inputs)
