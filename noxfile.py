@@ -88,7 +88,7 @@ def build(session: nox.Session) -> None:
 
 
 @nox.session
-def paper(session: nox.Sesson) -> None:
+def paper(session: nox.Session) -> None:
     """Build the JOSS paper draft."""
     paper_dir = DIR.joinpath("paper")
     session.run(
