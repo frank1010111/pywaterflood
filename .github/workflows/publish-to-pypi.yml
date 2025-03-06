@@ -17,11 +17,12 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
     env:
       # rust is not available for musl linux on i686. see https://github.com/rust-lang/rustup/issues/2984
-      CIBW_SKIP: "*-musllinux_i686"
+      CIBW_SKIP: "*-musllinux_i686 pp*"
       CIBW_BEFORE_ALL_LINUX: "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
 
@@ -37,6 +38,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
   build:
