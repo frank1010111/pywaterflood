@@ -17,12 +17,13 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
     env:
       # rust is not available for musl linux on i686. see https://github.com/rust-lang/rustup/issues/2984
-      CIBW_SKIP: "*-musllinux_i686"
-      CIBW_BEFORE_ALL_LINUX: "curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain stable -y"
+      CIBW_SKIP: "*-musllinux_i686 pp*"
+      CIBW_BEFORE_ALL_LINUX: curl -sSf https://sh.rustup.rs | sh -s -- -y
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
 
     steps:
@@ -31,12 +32,13 @@ jobs:
           fetch-depth: 0
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.22.0
+        uses: pypa/cibuildwheel@v2.23.1
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.12"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
   build:
@@ -50,7 +52,7 @@ jobs:
       - name: Build sdist
         run: pipx run build --sdist
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/
 
@@ -61,7 +63,7 @@ jobs:
       id-token: write
     steps:
       - name: get artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
@@ -89,7 +91,7 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: get artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           # unpacks default artifact into dist/
           # if `name: artifact` is omitted, the action will create extra parent dir
