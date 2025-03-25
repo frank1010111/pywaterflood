@@ -32,7 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.23.1
+        uses: pypa/cibuildwheel@v2.23.2
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.12"
 
