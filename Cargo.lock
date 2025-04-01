@@ -235,9 +235,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "peroxide"
-version = "0.39.2"
+version = "0.39.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "449fc3aa2419a27ff290cb774f73701dd77a53b51c32b2d5ad3edc994f593436"
+checksum = "4be81bfdeaba1ebdaae46c37bae9c2bd88237cc320a5c40ebab53529de4a2ca1"
 dependencies = [
  "anyhow",
  "matrixmultiply",
@@ -245,7 +245,7 @@ dependencies = [
  "paste",
  "peroxide-ad",
  "peroxide-num",
- "puruspe 0.3.0",
+ "puruspe",
  "rand",
  "rand_distr",
 ]
@@ -288,15 +288,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "puruspe"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5666f1226a41ebb7191b702947674f4814c9919da58a9f91a60090412664bbce"
-dependencies = [
- "lambert_w",
 ]
 
 [[package]]
@@ -379,7 +370,7 @@ dependencies = [
  "ndarray",
  "numpy",
  "peroxide",
- "puruspe 0.4.0",
+ "puruspe",
  "pyo3",
 ]
 
