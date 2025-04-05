@@ -10,5 +10,6 @@ New users should start with {doc}`7-minutes-to-pywaterflood`.
 choosing-crm.ipynb
 multiwell-productivity-index.ipynb
 buckley-leverett.ipynb
+aquifer.ipynb
 using-docker.md
 ```
