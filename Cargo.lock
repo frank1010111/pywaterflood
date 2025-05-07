@@ -78,9 +78,13 @@ checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
 
 [[package]]
 name = "lambert_w"
-version = "1.0.3"
+version = "1.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "041cd39b8f88e246c54e3825994aa7acea230a3918c4e89571924a319c44702b"
+checksum = "dc66ddcab7f8a3cc035052b0bb1f9f7f47ac92741b3fe78974bdd356fe023a40"
+dependencies = [
+ "num-complex",
+ "num-traits",
+]
 
 [[package]]
 name = "libc"
@@ -292,9 +296,9 @@ dependencies = [
 
 [[package]]
 name = "puruspe"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d76c522e44709f541a403db419a7e34d6fbbc8e6b208589ae29a030cddeefd96"
+checksum = "e2692b0d5427c05a258862ef7e4ee9bbdb03b97554fae3b7fcf6b4ac4a47e034"
 dependencies = [
  "lambert_w",
  "num-complex",
