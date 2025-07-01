@@ -13,7 +13,7 @@ crate-type = ["cdylib"]
 numpy = "0.21"
 ndarray = ">= 0.13, < 0.16"
 puruspe = "0.4.1"
-peroxide = "0.39.7"
+peroxide = "0.39.8"
 pyo3 = { version = "0.21", features = ["extension-module", "abi3-py37"] }
 
 [build]
