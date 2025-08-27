@@ -671,8 +671,7 @@ class CRM:
             tau[tau < 1e-10] = 1e-10
         elif tau < 1e-10:
             tau = 1e-10
-        if tau_producer < 1e-10:
-            tau_producer = 1e-10
+        tau_producer = max(tau_producer, 1e-10)
         return gains, tau, gain_producer, tau_producer
 
 
@@ -919,8 +918,7 @@ class CrmCompensated(CRM):
             tau[tau < 1e-10] = 1e-10
         elif tau < 1e-10:
             tau = 1e-10
-        if tau_producer < 1e-10:
-            tau_producer = 1e-10
+        tau_producer = max(tau_producer, 1e-10)
         return gains, tau, gain_producer, tau_producer, gain_pressure
 
     def _get_initial_guess(self, tau_selection: str | None = None, random=False):

@@ -133,7 +133,9 @@ def calc_influence_matrix(
         x_i, y_i = XA.loc[i, ["X", "Y"]]
         x_j, y_j = XB.loc[j, ["X", "Y"]] + 1e-6
         influence_matrix.loc[idx[i, j], "A"] = calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
-    return influence_matrix["A"].unstack().astype("float64")
+    return pd.pivot_table(influence_matrix["A"].reset_index(), "A", "level_0", "level_1").astype(
+        "float64"
+    )
 
 
 def calc_A_ij(x_i: float, y_i: float, x_j: float, y_j: float, y_D: float, m: ndarray) -> float:
