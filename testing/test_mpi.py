@@ -18,8 +18,9 @@ raw_locs = pd.DataFrame()
 def locations():
     "Well locations for an inverted 5-spot."
     xy = [(1, 1), (20, 1), (1, 20), (20, 20), (10.5, 10.5)]
-    x = np.array([x for x, _ in xy]) + np.random.normal(0, 0.5, len(xy))
-    y = np.array([y for _, y in xy]) + np.random.normal(0, 0.5, len(xy))
+    rng = np.random.default_rng(17)
+    x = np.array([x for x, _ in xy]) + rng.normal(0, 0.5, len(xy))
+    y = np.array([y for _, y in xy]) + rng.normal(0, 0.5, len(xy))
     locations = pd.DataFrame(
         {
             "x": x,
@@ -62,7 +63,9 @@ def test_Aij_symmetry():
         x_i, y_i = locations.loc[i, ["X", "Y"]]
         x_j, y_j = locations.loc[j, ["X", "Y"]] + 1e-6
         influence_matrix.loc[idx[i, j], "A"] = calc_A_ij(x_i, y_i, x_j, y_j, y_D, m)
-    influence_matrix = influence_matrix["A"].unstack().astype("float64")
+    influence_matrix = pd.pivot_table(
+        influence_matrix["A"].astype("float64").reset_index(), "A", "level_0", "level_1"
+    )
     assert pytest.approx(influence_matrix.iloc[0, 1], 1e-4) == influence_matrix.iloc[1, 0]
 
 

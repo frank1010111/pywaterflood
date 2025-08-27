@@ -133,7 +133,8 @@ def test_q_bhp():
     n_time = 5
     n_prod = 2
     pressure = np.ones((n_time, n_prod))
-    producer_gains = np.random.rand(n_prod)
+    rng = np.random.default_rng(14210)
+    producer_gains = rng.random(n_prod)
     q = q_bhp(pressure[:, 0], pressure, producer_gains)
     assert np.allclose(q, 0), "no pressure change -> no prod"
     pressure[-1] = 0

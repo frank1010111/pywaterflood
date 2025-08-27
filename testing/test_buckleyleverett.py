@@ -62,8 +62,9 @@ def test_reservoir_bad_residual_saturations():
 def test_water_front_velocity():
     reservoir = Reservoir(**valid_reservoir_inputs)
     n_runs = 100
-    sat_water_dist = np.random.uniform(0, 1, n_runs)
-    flow_rate_dist = np.random.uniform(0, 1e3, n_runs)
+    rng = np.random.default_rng(14210)
+    sat_water_dist = rng.uniform(0, 1, n_runs)
+    flow_rate_dist = rng.uniform(0, 1e3, n_runs)
     front_v = np.array(
         [
             water_front_velocity(reservoir, sat_water_dist[i], flow_rate_dist[i])
