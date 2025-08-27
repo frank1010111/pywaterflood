@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.9"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -630,7 +631,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "platform_system == 'Darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -1426,7 +1427,7 @@ name = "plumbum"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pywin32", marker = "platform_python_implementation != 'PyPy' and platform_system == 'Windows'" },
+    { name = "pywin32", marker = "platform_python_implementation != 'PyPy' and sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f0/5d/49ba324ad4ae5b1a4caefafbce7a1648540129344481f2ed4ef6bb68d451/plumbum-1.9.0.tar.gz", hash = "sha256:e640062b72642c3873bd5bdc3effed75ba4d3c70ef6b6a7b907357a84d909219", size = 319083 }
 wheels = [
@@ -1584,9 +1585,11 @@ devwork = [
 ]
 docs = [
     { name = "furo" },
+    { name = "matplotlib" },
     { name = "myst-parser" },
     { name = "nbsphinx" },
     { name = "pandoc" },
+    { name = "seaborn" },
     { name = "sphinx" },
     { name = "sphinx-autoapi" },
     { name = "sphinx-copybutton" },
@@ -1605,6 +1608,7 @@ requires-dist = [
     { name = "furo", marker = "extra == 'docs'" },
     { name = "ipykernel", marker = "extra == 'devwork'" },
     { name = "joblib", specifier = ">=1.1.0" },
+    { name = "matplotlib", marker = "extra == 'docs'", specifier = ">=3.0" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=0.13" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = ">=0.9" },
     { name = "numpy", specifier = ">=1.21" },
@@ -1615,12 +1619,14 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=3.0.0" },
     { name = "scipy", specifier = ">=1.4" },
     { name = "seaborn", marker = "extra == 'devwork'" },
+    { name = "seaborn", marker = "extra == 'docs'", specifier = ">=0.13.2" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0" },
     { name = "sphinx-autoapi", marker = "extra == 'docs'" },
     { name = "sphinx-copybutton", marker = "extra == 'docs'" },
     { name = "sphinx-design", marker = "extra == 'docs'" },
     { name = "sphinx-sitemap", marker = "extra == 'docs'" },
 ]
+provides-extras = ["test", "docs", "devwork"]
 
 [[package]]
 name = "pywin32"
