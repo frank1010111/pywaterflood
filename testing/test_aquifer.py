@@ -69,9 +69,9 @@ def test_water_dimensionless(method: Literal["marsal-walsh"] | Literal["klins"])
     r_ed_infinite = 1e9
     wd_finite = water_dimensionless(t_d, r_ed_infinite, method)
     wd_infinite = water_dimensionless_infinite(t_d, method)
-    assert (
-        pytest.approx(wd_finite) == wd_infinite
-    ), "for nearly infinite effective radius, assume no difference"
+    assert pytest.approx(wd_finite) == wd_infinite, (
+        "for nearly infinite effective radius, assume no difference"
+    )
 
     t_d2 = np.linspace(1, 200)
     r_ed2 = 2.0
@@ -79,12 +79,12 @@ def test_water_dimensionless(method: Literal["marsal-walsh"] | Literal["klins"])
     wd_infinite = water_dimensionless_infinite(t_d2, method)
     assert np.sum(np.isnan(wd_finite)) == 0, "No NaNs for finite Wd"
     assert np.sum(np.isnan(wd_infinite)) == 0, "No NaNs for infinite Wd"
-    assert (
-        sum(wd_finite > wd_infinite) == 0
-    ), "finite reservoir should never be bigger than infinite"
-    assert sum(wd_infinite > wd_finite) > (
-        len(wd_finite) / 2
-    ), "finite reservoir should be generally smaller than infinite"
+    assert sum(wd_finite > wd_infinite) == 0, (
+        "finite reservoir should never be bigger than infinite"
+    )
+    assert sum(wd_infinite > wd_finite) > (len(wd_finite) / 2), (
+        "finite reservoir should be generally smaller than infinite"
+    )
 
     with pytest.raises(ValueError, match="r_ed"):
         water_dimensionless(t_d2, r_ed=0.9, method=method)
