@@ -297,9 +297,9 @@ dependencies = [
 
 [[package]]
 name = "puruspe"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2692b0d5427c05a258862ef7e4ee9bbdb03b97554fae3b7fcf6b4ac4a47e034"
+checksum = "69a530540df16fa0cfb1f5a7c26c4d24544a2a9fb94c60831afa776360782d98"
 dependencies = [
  "lambert_w",
  "num-complex",
