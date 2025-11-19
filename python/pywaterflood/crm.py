@@ -224,13 +224,14 @@ class CRM:
             msg = "primary must be a boolean"
             raise TypeError(msg)
         self.primary = primary
-        if constraints not in (
+        valid_constraints = (
             "positive",
             "up-to one",
             "sum-to-one",
             "sum-to-one injector",
-        ):
-            msg = "Invalid constraints"
+        )
+        if constraints not in valid_constraints:
+            msg = f"Constraint must be one of {valid_constraints}, not {constraints}."
             raise ValueError(msg)
         self.constraints = constraints
         self.tau_selection = tau_selection
