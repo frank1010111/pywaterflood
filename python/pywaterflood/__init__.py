@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import sys
 
-from pywaterflood.crm import CRM, CrmCompensated
+from pywaterflood.crm import CRM, CrmCompensated, CrmInjector
 from pywaterflood.multiwellproductivity import (
     calc_gains_homogeneous,
     translate_locations,
@@ -34,4 +34,4 @@ if pyversion.major == 3 and pyversion.minor > 7:
     __version__ = version("pywaterflood")
 del sys, pyversion
 
-__all__ = ["CRM", "CrmCompensated", "calc_gains_homogeneous", "translate_locations"]
+__all__ = ["CRM", "CrmCompensated", "CrmInjector", "calc_gains_homogeneous", "translate_locations"]

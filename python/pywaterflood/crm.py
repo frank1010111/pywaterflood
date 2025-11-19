@@ -944,6 +944,158 @@ class CrmCompensated(CRM):
         return [np.concatenate([guess[i], pressure_guess]) for i in range(len(guess))]
 
 
+class CrmInjector(CRM):
+    """Capacitance-resistance model where there are injector, rather than producer, constraints.
+
+    CRM uses a physics-inspired mass balance approach to explain production for
+    waterfloods. It treats each injector-producer well pair as a system
+    with mass input, output, and pressure related to the mass balance.
+    Several versions exist and can be selected from the arguments.
+
+    The default arguments give the best results for most scenarios, but they
+    can be sub-optimal if there is insufficient data, and they run slower than
+    models with more simplifying assumptions.
+
+    Args
+    ----------
+    primary : bool
+        Whether to model primary production (True is strongly recommended)
+    tau_selection : str
+        How many tau values to select
+            - If 'per-pair', fit tau for each producer-injector pair
+            - If 'per-producer', fit tau for each producer (CRMP model)
+    constraints : str
+        How to constrain the gains
+            * If 'up-to one' (default), let gains vary from 0 (no connection) to 1 \
+           (all injection goes to producer)
+            * If 'positive', require each gain to be positive \
+                (It is unlikely to go negative in real life)
+            * If 'sum-to-one', require each injector's \
+                gains to sum to one (all injection accounted for)
+
+    Examples
+    ----------
+    >>> crm = CRM(True, "per-pair", "sum-to-one")
+    """
+
+    def __init__(
+        self,
+        primary: bool = True,
+        tau_selection: str = "per-pair",
+        constraints: str = "positive",
+    ):
+        """Initialize CRM with appropriate settings."""
+        if not isinstance(primary, bool):
+            msg = "primary must be a boolean"
+            raise TypeError(msg)
+        self.primary = primary
+        if constraints not in (
+            "positive",
+            "up-to one",
+            "sum-to-one",
+        ):
+            msg = f"Constraints must be one of ('positive', 'up-to one', 'sum-to-one'), not {constraints}"
+            raise ValueError(msg)
+        self.constraints = constraints
+        self.tau_selection = tau_selection
+        if tau_selection == "per-pair":
+            self.q_CRM = q_CRM_perpair
+        elif tau_selection == "per-producer":
+            self.q_CRM = q_CRM_perproducer
+        else:
+            msg = f'tau_selection must be one of ("per-pair","per-producer"), not {tau_selection}'
+            raise ValueError(msg)
+
+    def fit(
+        self,
+        production: NDArray,
+        injection: NDArray,
+        time: NDArray,
+        initial_guess: NDArray = None,
+        num_cores: int = 1,
+        random: bool = False,
+        **kwargs,
+    ):
+        """Build a CRM model from the production and injection data.
+
+        Args
+        ----------
+        production : NDArray
+            production rates for each time period,
+            shape: (n_time, n_producers)
+        injection : NDArray
+            injection rates for each time period,
+            shape: (n_time, n_injectors)
+        time : NDArray
+            relative time for each rate measurement, starting from 0,
+            shape: (n_time)
+        initial_guess : NDArray
+            initial guesses for gains, taus, primary production contribution
+            shape: (len(guess), n_producers)
+        num_cores : int
+            number of cores to run fitting procedure on, defaults to 1
+        random : bool
+            whether to randomly initialize the gains
+        **kwargs:
+            keyword arguments to pass to scipy.optimize fitting routine
+
+        Returns
+        ----------
+        self: trained model
+
+        Example
+        -------
+        >>> gh_url = (
+        ...     "https://raw.githubusercontent.com/frank1010111/pywaterflood/master/testing/data/"
+        ... )
+        >>> prod = pd.read_csv(gh_url + "production.csv", header=None).values
+        >>> inj = pd.read_csv(gh_url + "injection.csv", header=None).values
+        >>> time = pd.read_csv(gh_url + "time.csv", header=None).values[:, 0]
+        >>> crm = CRM(True, "per-pair", "up-to one")
+        >>> crm.fit(prod, inj, time)
+        """
+        _validate_inputs(production, injection, time)
+        self.production = production
+        self.injection = injection
+        self.time = time
+
+        if not initial_guess:
+            initial_guess = self._get_initial_guess(random=random)
+        bounds, constraints = self._get_bounds()
+
+        def fit_well(production, x0):
+            # residual is an L2 norm
+            def residual(x, production):
+                return sum(
+                    (production - self._calculate_qhat(x, production, injection, time)) ** 2
+                )
+
+            return optimize.minimize(
+                residual,
+                x0,
+                bounds=bounds,
+                constraints=constraints,
+                args=(production,),
+                **kwargs,
+            )
+
+        if num_cores == 1:
+            results = map(fit_well, self.production.T, initial_guess)
+        else:
+            results = Parallel(n_jobs=num_cores)(
+                delayed(fit_well)(p, x0) for p, x0 in zip(self.production.T, initial_guess)
+            )
+
+        opts_perwell = [self._split_opts(r["x"]) for r in results]
+        gains_perwell, tau_perwell, gains_producer, tau_producer = map(list, zip(*opts_perwell))
+
+        self.gains: NDArray = np.vstack(gains_perwell)
+        self.tau: NDArray = np.vstack(tau_perwell)
+        self.gains_producer = np.array(gains_producer)
+        self.tau_producer = np.array(tau_producer)
+        return self
+
+
 def _validate_inputs(
     production: NDArray | None = None,
     injection: NDArray | None = None,
