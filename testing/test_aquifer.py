@@ -43,7 +43,7 @@ def test_effective_radius_checks(var, invalid_arg):
     """Test that effective radius remains sane."""
     test_inputs = copy(valid_reservoir_inputs)
     test_inputs[var] = invalid_arg
-    match = "domain" if invalid_arg < 0 else var
+    match = "domain|nonnegative" if invalid_arg < 0 else var
     with pytest.raises(ValueError, match=match):
         effective_reservoir_radius(**test_inputs)
 
