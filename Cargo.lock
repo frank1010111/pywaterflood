@@ -255,9 +255,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "peroxide"
-version = "0.40.0"
+version = "0.40.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "394b064b6069af31d72b1c211181d0962c677446e52c7edd50f3d672c83b7394"
+checksum = "fd41318328ea4f57e7230e284c09027048e44bdde4e1480b20b6f3c74ccf30f5"
 dependencies = [
  "anyhow",
  "matrixmultiply",
@@ -321,9 +321,9 @@ dependencies = [
 
 [[package]]
 name = "puruspe"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69a530540df16fa0cfb1f5a7c26c4d24544a2a9fb94c60831afa776360782d98"
+checksum = "d0893368b28f4d37983703c75b345967d4c7184ae3306a6c048c0b711573ae3b"
 dependencies = [
  "lambert_w",
  "num-complex",
