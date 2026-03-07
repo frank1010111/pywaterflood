@@ -7,6 +7,7 @@ import pytest
 from pywaterflood.crm import (
     CRM,
     CrmCompensated,
+    CrmInjector,
     q_bhp,
     q_CRM_perpair,
     q_CRM_perproducer,
@@ -19,6 +20,7 @@ tau_selection = ("per-pair", "per-producer")
 constraints = ("positive", "up-to one", "sum-to-one")
 test_args = list(product(primary, tau_selection, constraints))
 data_dir = "testing/data/"
+MODELS = {"CRM": CRM, "CrmInjector": CrmInjector, "CRMCompensated": CrmCompensated}
 
 
 @pytest.fixture
@@ -33,6 +35,22 @@ def reservoir_simulation_data():
 def trained_model(reservoir_simulation_data):
     def _trained_model(*args, **kwargs):
         crm = CRM(*args, **kwargs)
+        crm.injection, crm.production, crm.time = reservoir_simulation_data
+        crm.gains = np.genfromtxt(data_dir + "gains.csv", delimiter=",")
+        if crm.tau_selection == "per-pair":
+            crm.tau = np.genfromtxt(data_dir + "taus_per-pair.csv", delimiter=",")
+        else:
+            crm.tau = np.genfromtxt(data_dir + "taus.csv", delimiter=",")
+        crm.gains_producer = np.genfromtxt(data_dir + "gain_producer.csv", delimiter=",")
+        crm.tau_producer = np.genfromtxt(data_dir + "tau_producer.csv", delimiter=",")
+        return crm
+
+    return _trained_model
+
+
+def trained_injector_model(reservoir_simulation_data):
+    def _trained_model(*args, **kwargs):
+        crm = CrmInjector(*args, **kwargs)
         crm.injection, crm.production, crm.time = reservoir_simulation_data
         crm.gains = np.genfromtxt(data_dir + "gains.csv", delimiter=",")
         if crm.tau_selection == "per-pair":
@@ -147,18 +165,21 @@ def test_q_bhp():
     assert np.allclose(q[-1], -2), "pressure increase -> drop production"
 
 
+@pytest.mark.parametrize("crm", ["CRM", "CrmInjector", "CRMCompensated"])
 @pytest.mark.parametrize(("primary", "tau_selection", "constraints"), test_args)
 class TestInstantiate:
-    def test_init(self, primary, tau_selection, constraints):
-        CRM(primary, tau_selection, constraints)
+    def test_init(self, primary, tau_selection, constraints, crm):
+        Model = MODELS[crm]
+        Model(primary, tau_selection, constraints)
 
-    def test_init_fails(self, primary, tau_selection, constraints):
+    def test_init_fails(self, primary, tau_selection, constraints, crm):
+        Model = MODELS[crm]
         with pytest.raises(TypeError):
-            CRM(primary="yes", tau_selection=tau_selection, constraints=constraints)
-        with pytest.raises(ValueError, match="constraints"):
-            CRM(primary=primary, tau_selection=tau_selection, constraints="negative")
+            Model(primary="yes", tau_selection=tau_selection, constraints=constraints)
+        with pytest.raises(ValueError, match="Constraint"):
+            Model(primary=primary, tau_selection=tau_selection, constraints="negative")
         with pytest.raises(ValueError, match="tau"):
-            CRM(primary=primary, tau_selection="per-Bob", constraints=constraints)
+            Model(primary=primary, tau_selection="per-Bob", constraints=constraints)
 
 
 @pytest.mark.parametrize("tau_selection", tau_selection)
@@ -386,9 +407,6 @@ class TestExport:
 
 @pytest.mark.parametrize(("primary", "tau_selection", "constraints"), test_args)
 class TestCompensated:
-    def test_init_compensated(self, primary, tau_selection, constraints):
-        crm = CrmCompensated(primary, tau_selection, constraints)
-        assert crm.primary == primary
 
     @pytest.mark.parametrize("random", [True, False])
     @pytest.mark.parametrize("num_cores", [1, 4])
