@@ -68,7 +68,7 @@ fn _core<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
         let production = production.as_array();
         let time = time.as_array();
         let q = q_primary(production, time, gain_producer, tau_producer);
-        q.into_pyarray_bound(py)
+        q.into_pyarray(py)
     }
 
     #[pyfn(m)]
@@ -85,7 +85,7 @@ fn _core<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
         let gains = gains.as_array();
         let taus = taus.as_array();
         let q = q_crm_perpair(injection, time, gains, taus);
-        q.into_pyarray_bound(py)
+        q.into_pyarray(py)
     }
 
     #[pyfn(m)]
@@ -100,7 +100,7 @@ fn _core<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
         let pressure = pressure.as_array();
         let v_matrix = v_matrix.as_array();
         let q = q_bhp(pressure_local, pressure, v_matrix);
-        q.into_pyarray_bound(py)
+        q.into_pyarray(py)
     }
 
     #[pyfn(m)]
@@ -274,7 +274,7 @@ fn _core<'py>(_py: Python, m: &Bound<'py, PyModule>) -> PyResult<()> {
                 w_ek[k] += delta_pressure[j + 1] * w_d[k - j];
             }
         }
-        w_ek.into_pyarray_bound(py)
+        w_ek.into_pyarray(py)
     }
 
     Ok(())
