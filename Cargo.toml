@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 numpy = "0.28"
 ndarray = "0.16"
-puruspe = "0.4.3"
+puruspe = "0.4.4"
 peroxide = "0.41.0"
 pyo3 = { version = "0.28", features = ["extension-module", "abi3-py37"] }
 
