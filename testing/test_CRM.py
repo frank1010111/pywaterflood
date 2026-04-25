@@ -213,7 +213,7 @@ class TestPredict:
             assert np.all(prediction >= 0)
 
     def test_predict_fails(self, reservoir_simulation_data, trained_model, primary, tau_selection):
-        injection, production, time = reservoir_simulation_data
+        injection, _production, time = reservoir_simulation_data
         crm = trained_model(primary, tau_selection)
         with pytest.raises(
             TypeError, match="Either both or neither of injection or time must be specified"
@@ -290,9 +290,9 @@ class TestFit:
         crm = CRM(primary, tau_selection, constraints)
         injection, production, time = reservoir_simulation_data
 
-        with pytest.raises(TypeError, match="missing .* positional argument"):
+        with pytest.raises(TypeError, match=r"missing .* positional argument"):
             crm.fit(production)
-        with pytest.raises(TypeError, match="missing .* positional argument"):
+        with pytest.raises(TypeError, match=r"missing .* positional argument"):
             crm.fit(production, injection)
         with pytest.raises(ValueError, match="same number of timesteps"):
             crm.fit(production[:-1], injection, time)
@@ -368,7 +368,7 @@ class TestExport:
 
     def test_to_excel_fails(self, trained_model, primary, tmpdir):
         crm = trained_model(primary)
-        with pytest.raises(TypeError, match="missing .* argument"):
+        with pytest.raises(TypeError, match=r"missing .* argument"):
             crm.to_excel()
         crm2 = CRM(primary)
         with pytest.raises(ValueError, match="Model has not been trained"):
@@ -380,7 +380,7 @@ class TestExport:
 
     def test_to_pickle_fails(self, trained_model, primary):
         crm = trained_model(primary)
-        with pytest.raises(TypeError, match="missing .* argument"):
+        with pytest.raises(TypeError, match=r"missing .* argument"):
             crm.to_pickle()
 
 
